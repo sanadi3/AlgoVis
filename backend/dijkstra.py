@@ -1,37 +1,53 @@
 import heapq
-def dijkstra(graph, start):
-    if start not in graph:
-        raise ValueError(f"Start node '{start}' not found in the graph.")
 
-    # Include neighbor-only nodes
+def dijkstra(graph, start):
     all_nodes = set(graph.keys())
     for edges in graph.values():
         all_nodes.update(edges.keys())
 
     distances = {node: float('inf') for node in all_nodes}
+    prev = {node: None for node in all_nodes}
     distances[start] = 0
-    visited_order = []
+
+    visited = set()
     queue = [(0, start)]
 
     while queue:
         current_dist, current_node = heapq.heappop(queue)
-        if current_dist > distances[current_node]:
+
+        if current_node in visited:
             continue
+        visited.add(current_node)
 
-        visited_order.append((current_node, current_dist))
-
+        neighbors = []
         for neighbor, weight in graph.get(current_node, {}).items():
-            if neighbor not in distances:
-                continue  # skip unknown nodes
-            distance = current_dist + weight
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                heapq.heappush(queue, (distance, neighbor))
+            if neighbor in visited:
+                continue
+            neighbors.append(neighbor)
+            new_distance = current_dist + weight
+            if new_distance < distances[neighbor]:
+                distances[neighbor] = new_distance
+                prev[neighbor] = current_node
+                heapq.heappush(queue, (new_distance, neighbor))
 
-    return {
-        "distances": distances,
-        "visited_order": visited_order
+        yield {
+            "current": current_node,
+            "distances": distances.copy(),
+            "visited": visited.copy(),
+            "prev": prev.copy(),
+            "queue": [n for (_, n) in queue],  # just the nodes
+            "neighbors": neighbors
+        }
+
+    yield {
+        "current": None,
+        "distances": distances.copy(),
+        "visited": visited.copy(),
+        "prev": prev.copy(),
+        "queue": [],
+        "neighbors": []
     }
+
 
 
 
