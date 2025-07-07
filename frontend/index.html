@@ -1,86 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dijkstra Visualizer</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Styling via Bootstrap CDN for polish -->
+    <link href="https://cdn.jsdeliver.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <style>
         body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
+            background: #f7f9fc;
         }
-
+        .monospace {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
         textarea {
-            width: 100%;
-            max-width: 600px;
-            height: 200px;
+            min-height: 160px;
+            resize: vertical;
         }
-
-        input, button {
-            margin-top: 10px;
-            padding: 5px;
-        }
-
-        pre {
-            background: #f5f5f5;
-            padding: 10px;
-            max-width: 600px;
-            overflow-x: auto;
+        #resultTable th,
+        #resultTable td{
+            padding: 0.35rem 0.75rem;
         }
     </style>
 </head>
-<body>
-<h1>Dijkstra's Algorithm Visualizer</h1>
-
-<label for="graphInput">Graph (JSON format):</label><br>
-<textarea id="graphInput">
-{
-  "A": {"B": 1, "C": 4},
-  "B": {"C": 2, "D": 5},
-  "C": {"D": 1},
-  "D": {}
-}
-</textarea><br>
-
-<label for="startNode">Start Node:</label><br>
-<input id="startNode" placeholder="e.g. A" value="B" />
-<button onclick="submitGraph()">Run Dijkstra</button>
-
-<h2>Result:</h2>
-<pre id="result">No result yet.</pre>
-
-<script>
-    async function submitGraph() {
-        const graphText = document.getElementById("graphInput").value.trim();
-        const startNode = document.getElementById("startNode").value.trim();
-        const resultEl = document.getElementById("result");
-
-        let graph;
-        try {
-            graph = JSON.parse(graphText);
-        } catch (e) {
-            resultEl.textContent = "Invalid JSON format.";
-            return;
-        }
-
-        try {
-            const response = await fetch("http://127.0.0.1:5000/api/run_dijkstra", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ graph, start: startNode }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                resultEl.textContent = `Error: ${errorData.error || "Unknown error occurred."}`;
-                return;
-            }
-
-            const data = await response.json();
-            resultEl.textContent = JSON.stringify(data, null, 2);
-        } catch (error) {
-            resultEl.textContent = `Request failed: ${error.message}`;
-        }
-    }
-</script>
-</body>
 </html>
-
