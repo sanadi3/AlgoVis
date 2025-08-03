@@ -1,25 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+<! Declaration + language --->
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Styling via Bootstrap CDN for polish -->
-    <link href="https://cdn.jsdeliver.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <title>Graph Visualizer</title>
     <style>
-        body {
-            background: #f7f9fc;
-        }
-        .monospace {
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        }
-        textarea {
-            min-height: 160px;
-            resize: vertical;
-        }
-        #resultTable th,
-        #resultTable td{
-            padding: 0.35rem 0.75rem;
-        }
+        /* ---- layout -------------------------------------------------- */
+        body      { margin:0; display:flex; height:100vh; font-family:sans-serif; }
+        #sidebar  { width:260px; padding:24px 20px; border-right:1px solid #dadada; box-sizing:border-box; }
+        #stage    { flex:1;  /* takes the remaining space */
+            border:1px solid #999; border-radius:8px; }
+
+        /* ---- sidebar placeholder styling ---------------------------- */
+        h2        { margin-top:0; font-size:20px; }
+        .algoBtn  { display:block; margin:6px 0; padding:6px 10px;
+            border:1px solid #888; border-radius:6px; background:#f4f4f4; cursor:pointer; }
+        /* button changes color when hovered over */
+        .algoBtn:hover { background:#e8e8e8; }
     </style>
 </head>
+<body>
+<!-- ①  controls -->
+<aside id="sidebar">
+    <h2>Algorithms</h2>
+    <button class="algoBtn">Dijkstra</button>
+    <button class="algoBtn">BFS</button>
+    <button class="algoBtn">DFS</button>
+    <!-- add more later -->
+</aside>
+
+<!-- ②  drawing surface -->
+<canvas id="stage"></canvas>
+
+<script src="main.js"></script>
+</body>
 </html>
+
