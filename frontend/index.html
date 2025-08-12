@@ -1,38 +1,484 @@
 <!DOCTYPE html>
 <html lang="en">
-<! Declaration + language --->
-<head>
-    <meta charset="UTF-8" />
-    <title>Graph Visualizer</title>
-    <style>
-        /* ---- layout -------------------------------------------------- */
-        body      { margin:0; display:flex; height:100vh; font-family:sans-serif; }
-        #sidebar  { width:260px; padding:24px 20px; border-right:1px solid #dadada; box-sizing:border-box; }
-        #stage    { flex:1;  /* takes the remaining space */
-            border:1px solid #999; border-radius:8px; }
+<!-- Declaration + language -->
 
-        /* ---- sidebar placeholder styling ---------------------------- */
-        h2        { margin-top:0; font-size:20px; }
-        .algoBtn  { display:block; margin:6px 0; padding:6px 10px;
-            border:1px solid #888; border-radius:6px; background:#f4f4f4; cursor:pointer; }
-        /* button changes color when hovered over */
-        .algoBtn:hover { background:#e8e8e8; }
+<!-- document meta info -->
+<head>
+    <meta charset="UTF-8"> <!-- charac encoding -->
+    <!-- viewport, makes website compatible on all devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Algorithm Visualizer</title>
+    <!-- CSS code -->
+    <style>
+        /*
+        margin to remove spacing around elements
+        padding to remove spacing inside elements
+        box sizing to fix layout.
+         */
+
+        * { margin: 0; padding: 0; box-sizing: border-box;}
+
+        body {
+            /* set font */
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+            /* flex container to arrange items */
+            display: flex;
+
+            /* height to take up the whole browser*/
+            height: 100vh;
+
+            /*background color*/
+            background: #f5f7fa;
+
+            /* prevent scrolling on main page, scrolling is handled on specific sections */
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR ITEM STYLES --- */
+        /* targets sidebar id items */
+        #sidebar {
+            width: 320px;
+            background: #fff; /*white background */
+            box-shadow: 2px 0 8px rgba(0,0,0,0.08); /*small shadow */
+            display: flex; /*sidebar is a flex*/
+            flex-direction: column; /*arrange items vertically */
+            z-index: 10;
+        }
+
+        /* all sidebar header elements */
+        .sidebar-header{
+            padding: 24px; /* space inside header */
+            border-bottom: 1px solid #e1e7ed; /* light gray line at the bottom */
+        }
+
+        /* for h1 elements */
+        .sidebar-header h1{
+            font-size: 24px; /* text larger*/
+            color: #1a1a1a; /* dark grey */
+            margin-bottom: 8px; /* space below title */
+        }
+
+        .sidebar-header p {
+            color: #666; /* medium gray for the subtitle text */
+            font-size: 14px;
+        }
+
+        .sidebar-content {
+            flex: 1; /* tell element to take up all available space in the sidebar using flexbox */
+            overflow-y: auto; /*scroll bar if needed (content gets too tall) */
+            padding: 20px; /*designated space */
+        }
+
+        .control-section {
+            margin-bottom: 24px; /* space below the controls */
+        }
+
+        .control-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase; /*text in all caps */
+            letter-spacing: 0.5px;
+            margin-bottom: 12px; /* space below the heading */
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px 16px; /* 12x16 rectangle */
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 8px; /* gives the buttons rounded corner */
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer; /* indicates using the cursor that its button */
+            transition: all 0.2s; /*hovering delay time tc*/
+            text-align: left; /* text aligned to the left */
+        }
+
+        /* style for "primary" run algo button */
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover{
+            background: #2563eb;
+            transform: translateY(-1px); /*moves button up by 1 */
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3)
+        }
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-danger{
+            background: #ef4444; /*red*/
+            color: white;
+        }
+
+        .btn-danger:hover{
+            background: #dc2626; /*darker red */
+        }
+
+        .algo-btn {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        /* ::before is a pseudo-element. since it doesnt exist yet */
+        .algo-btn::before {
+            content: ''; /*must have content for pseudo elements. initially empty */
+            position: absolute; /* positions the element relative to algo-btn */
+            left: 16px; /* 16 px from the left edge of the button */
+            top: 50%; /* 50% from the top edge */
+            transform: translateY(-50%); /* placing it up by 50% of its own height centers it vertically */
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #9ca3af /* gray dot */
+        }
+
+        /* targets algo btns that have the active class */
+        .algo-btn.active::before {
+            background: #3b82f6; /* dot turns blue when the algorithm is active */
+        }
+
+        /* speed */
+
+        .speed-control {
+            margin-top: 16px;
+        }
+
+        .speed-control label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .speed-slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e5e7eb;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Info Panel */
+        .info-panel {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .info-panel strong {
+            color: #374151;
+        }
+
+        /* main canvas area styling */
+        #main {
+            flex: 1; /* take up the remaining space next to the sidebar */
+            display: flex;
+            flex-direction: column;
+            background: #fafbfc;
+        }
+
+        #toolbar {
+            background: #fff;
+            border-bottom: 1px solid #e1e7ed;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px; /* 12px of space between each */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .tool-btn {
+            padding: 8px 16px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tool-btn:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .tool-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .tool-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #stage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+        }
+
+        #stage.connecting {
+            cursor: pointer;
+        }
+
+        @keyframes nodeHighlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Modal (pop-up window) styles */
+        .modal {
+            display: none; /*hidden by default */
+            position: fixed;
+            top: 0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000; /* makes it overlay everything else */
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex; /* when the model is active change the display to make it visible */
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .weight-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        /* status bar styles */
+        #status-bar {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 8px 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
     </style>
 </head>
+
+
+<!-- body tag contains all the content that is visible to the user -->
+
 <body>
-<!-- ①  controls -->
-<aside id="sidebar">
-    <h2>Algorithms</h2>
-    <button class="algoBtn">Dijkstra</button>
-    <button class="algoBtn">BFS</button>
-    <button class="algoBtn">DFS</button>
-    <!-- add more later -->
-</aside>
+    <!-- aside defines content aside from what it is placed in, for sidebars -->
+    <aside id="sidebar">
+        <!-- div is a container to group elements together -->
 
-<!-- ②  drawing surface -->
-<canvas id="stage"></canvas>
+        <div class="sidebar-header">
+            <h1>Graph Visualizer</h1>
+            <p>Interactive algorithm visualization tool</p>
+        </div>
 
-<script src="main.js"></script>
+        <div class="sidebar-content">
+            <!-- algorithm selection buttons -->
+            <div class="control-section">
+                <h3>Graph Algorithms</h3>
+
+                <!-- button tag to create a clickable button
+                - 'class="btn btn-secondary algo-btn"' applies three different CSS classes
+                        to use multiple sets of styles and objects
+                - 'data-algo="dijkstra"' to store the data of this element. in this case its the algorithm name
+                -->
+                <button class="btn btn-secondary algo-btn" data-algo="dijkstra">Dijkstra's Shortest Path</button>
+                <button class="btn btn-secondary algo-btn" data-algo="bfs">Breadth-First Search</button>
+                <button class="btn btn-secondary algo-btn" data-algo="dfs">Depth-First Search</button>
+                <button class="btn btn-secondary algo-btn" data-algo="prim">Prim's MST</button>
+                <button class="btn btn-secondary algo-btn" data-algo="kruskal">Kruskal's MST</button>
+                <button class="btn btn-secondary algo-btn" data-algo="bellman-ford">Bellman-Ford</button>
+            </div>
+
+            <!-- div for playback controls -->
+            <div class="control-section">
+                <h3>Controls</h3>
+                <button id="runBtn" class="btn btn-primary">
+                    <!-- span tag -->
+                    <span>▶</span> Run Algorithm
+                </button>
+                <button id="stepBtn" class="btn btn-secondary">Step Forward</button>
+                <button id="resetBtn" class="btn btn-secondary">Reset</button>
+                <button id="clearBtn" class="btn btn-secondary">Clear</button>
+
+                <div class="speed-control">
+                    <!-- label tag, links it to the speed control <input> so user can access the slider -->
+                    <label for="speedSlider">Animation Speed</label>
+                    <!--
+                        An <input> tag specifies a field where the user can enter data.
+                        type="range" makes it a slider control
+                        id="speedSlider" gives it a unique ID to link with the label
+                        'min' 'max' and 'value' set the ranges and default value of the slider
+                        -->
+                    <input type="range" id="speedSlider" class="speed-slider" min="1" max="10" value="5">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Graph Options</h3>
+                <button id="generateBtn" class="btn btn-secondary">Generate Random Graph</button>
+                <button id="directedBtn" class="btn btn-secondary">Toggle Directed</button>
+                <button id="weightedBtn" class="btn btn-secondary">Toggle Weighted</button>
+                <button id="exportBtn" class="btn btn-secondary">Export Graph</button>
+                <button id="importBtn" class="btn btn-secondary">Import Graph</button>
+            </div>
+
+
+            <div class="info-panel">
+                <!-- strong makes text bold -->
+
+                <strong>Instructions:</strong><br> <!-- <br> is a line-break -->
+                • Click to add nodes<br>
+                • Use Edge tool to connect nodes<br>
+                • Select an algorithm and click Run<br>
+                • Right-click nodes to set start/end
+            </div>
+        </div>
+    </aside>
+
+    <!-- main tag specifies the main content. shuld only be one main element ina  doc-->
+    <main id="main">
+        <!-- toolbar to switch between nodes, edges, etc... -->
+        <div id="toolbar">
+            <button class="tool-btn active" data-tool="node">
+                <!-- using svg's for vector graphics that look sharp -->
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="8"/>
+                </svg>
+                Node
+            </button>
+            <button class="tool-btn" data-tool="edge">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 20 20">
+                    <path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke-width="2"/>
+                </svg>
+                Edge
+            </button>
+            <button class="tool-btn" data-tool="move">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                </svg>
+                Move
+            </button>
+        </div>
+
+        <!-- div container for canvas -->
+        <div id="canvas-container">
+            <!--
+                canvas tag to draw graphics on the fly with JS.
+                this is where graph visualization will appear.
+                -->
+            <canvas id="stage"></canvas>
+        </div>
+
+        <div id="status-bar">
+            <div class="status-item">
+                <span class="status-indicator"></span>
+                <span id="statusText">Ready</span>
+            </div>
+            <div class="status-item">
+                Nodes: <span id="nodeCount">0</span>
+            </div>
+            <div class="status-item">
+                Edges: <span id="edgeCount">0</span>
+            </div>
+             <div class="status-item">
+                 Algorithm: <span id="currentAlgo">None</span>
+             </div>
+        </div>
+    </main>
+
+    <div id="weightModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Set Edge Weight</h2>
+            </div>
+
+            <!-- type="number" makes the input field only accept numbers -->
+            <input type="number" id="weightInput" class="weight-input" placeholder="Enter weight (default: 1)" value="1">
+            <button id="weightConfirm" class="btn btn-primary">Confirm</button>
+            <button id="weightCancel" class="btn btn-secondary">Cancel</button>
+        </div>
+    </div>
+
+    <!--
+    <script> tag to refer to the executable JS file.
+    The logic for drawing graphs, handling clicks, and running the algorithms will be placed into
+    Best practice is to place the scripts at the end of the body so the browser can
+    load and display all the static html content first, making the page load faster.
+    -->
+    <script src="main.js"></script>
 </body>
 </html>
+
+
+
+
+
 
