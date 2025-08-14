@@ -32,7 +32,18 @@ class GraphVisualizer {
         this.backendUrl = 'http://localhost:3001';
 
         // Add step explainer
-        this.stepExplainer = new StepExplainer(this);
+        if (typeof StepExplainer !== 'undefined') {
+            console.log('Creating StepExplainer');
+            this.stepExplainer = new StepExplainer(this);
+        } else {
+            console.warn('StepExplainer not found! Make sure step-explainer.js is loaded');
+            // Create a dummy explainer to prevent errors
+            this.stepExplainer = {
+                startAlgorithm: () => {},
+                addStep: () => {},
+                clear: () => {}
+            };
+        }
 
         // colors
         this.nodeRadius = 25;
