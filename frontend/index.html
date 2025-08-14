@@ -291,6 +291,15 @@
             width: 90%;
         }
 
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
         .weight-input {
             width: 100%;
             padding: 10px;
@@ -323,6 +332,318 @@
             border-radius: 50%;
             background: #10b981;
         }
+
+        /* Step Explainer Styles */
+        #explanation-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        #explanation-panel.active {
+            display: flex;
+        }
+
+        .explanation-header {
+            background: #1f2937;
+            color: white;
+            padding: 16px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .explanation-header h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .minimize-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .minimize-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .explanation-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .step-item {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 4px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+
+        .step-item.current {
+            background: #eff6ff;
+            border-left-color: #3b82f6;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+        }
+
+        .step-item.completed {
+            opacity: 0.6;
+        }
+
+        .step-number {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .step-item.current .step-number {
+            color: #3b82f6;
+        }
+
+        .step-text {
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .step-code {
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 8px 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .step-details {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .step-detail-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .step-detail-value {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        /* Pseudocode Panel */
+        #pseudocode-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 350px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 99;
+            display: none;
+            max-height: 400px;
+            overflow: hidden;
+        }
+
+        #pseudocode-panel.active {
+            display: block;
+        }
+
+        .pseudocode-header {
+            background: #f3f4f6;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .pseudocode-content {
+            padding: 16px;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-y: auto;
+            max-height: 350px;
+        }
+
+        .pseudocode-line {
+            padding: 2px 0;
+            transition: background 0.3s;
+        }
+
+        .pseudocode-line.active {
+            background: #fef3c7;
+            padding: 2px 8px;
+            margin: 0 -8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .pseudocode-line.completed {
+            color: #9ca3af;
+        }
+
+        /* Step Counter */
+        .step-counter {
+            position: fixed;
+            bottom: 20px;
+            right: 440px;
+            background: #3b82f6;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 98;
+        }
+
+        .step-counter.active {
+            display: flex;
+        }
+
+        .step-counter-number {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Toggle Explanation Button */
+        .toggle-explanation-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+            z-index: 101;
+            transition: all 0.2s;
+        }
+
+        .toggle-explanation-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .toggle-explanation-btn.hidden {
+            display: none;
+        }
+
+        /* Data Structure Visualization */
+        .data-structure-view {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 8px;
+        }
+
+        .data-structure-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .queue-view, .stack-view, .priority-queue-view {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .queue-item, .stack-item, .pq-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .pq-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .pq-priority {
+            font-size: 10px;
+            color: #6b7280;
+        }
+
+        /* Animation for new steps */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .step-item.new {
+            animation: slideIn 0.3s ease;
+        }
+
+        /* Minimized state */
+        #explanation-panel.minimized {
+            height: auto;
+            max-height: none;
+        }
+
+        #explanation-panel.minimized .explanation-content {
+            display: none;
+        }
+
+        #explanation-panel.minimized .minimize-btn::before {
+            content: '▲';
+        }
+
+        .minimize-btn::before {
+            content: '▼';
+        }
     </style>
 </head>
 
@@ -330,150 +651,154 @@
 <!-- body tag contains all the content that is visible to the user -->
 
 <body>
-    <!-- aside defines content aside from what it is placed in, for sidebars -->
-    <aside id="sidebar">
-        <!-- div is a container to group elements together -->
+<!-- aside defines content aside from what it is placed in, for sidebars -->
+<aside id="sidebar">
+    <!-- div is a container to group elements together -->
 
-        <div class="sidebar-header">
-            <h1>Graph Visualizer</h1>
-            <p>Interactive algorithm visualization tool</p>
-        </div>
-
-        <div class="sidebar-content">
-            <!-- algorithm selection buttons -->
-            <div class="control-section">
-                <h3>Graph Algorithms</h3>
-
-                <!-- button tag to create a clickable button
-                - 'class="btn btn-secondary algo-btn"' applies three different CSS classes
-                        to use multiple sets of styles and objects
-                - 'data-algo="dijkstra"' to store the data of this element. in this case its the algorithm name
-                -->
-                <button class="btn btn-secondary algo-btn" data-algo="dijkstra">Dijkstra's Shortest Path</button>
-                <button class="btn btn-secondary algo-btn" data-algo="bfs">Breadth-First Search</button>
-                <button class="btn btn-secondary algo-btn" data-algo="dfs">Depth-First Search</button>
-                <button class="btn btn-secondary algo-btn" data-algo="prim">Prim's MST</button>
-                <button class="btn btn-secondary algo-btn" data-algo="kruskal">Kruskal's MST</button>
-                <button class="btn btn-secondary algo-btn" data-algo="bellman-ford">Bellman-Ford</button>
-            </div>
-
-            <!-- div for playback controls -->
-            <div class="control-section">
-                <h3>Controls</h3>
-                <button id="runBtn" class="btn btn-primary">
-                    <!-- span tag -->
-                    <span>▶</span> Run Algorithm
-                </button>
-                <button id="stepBtn" class="btn btn-secondary">Step Forward</button>
-                <button id="resetBtn" class="btn btn-secondary">Reset</button>
-                <button id="clearBtn" class="btn btn-secondary">Clear</button>
-
-                <div class="speed-control">
-                    <!-- label tag, links it to the speed control <input> so user can access the slider -->
-                    <label for="speedSlider">Animation Speed</label>
-                    <!--
-                        An <input> tag specifies a field where the user can enter data.
-                        type="range" makes it a slider control
-                        id="speedSlider" gives it a unique ID to link with the label
-                        'min' 'max' and 'value' set the ranges and default value of the slider
-                        -->
-                    <input type="range" id="speedSlider" class="speed-slider" min="1" max="10" value="5">
-                </div>
-            </div>
-
-            <div class="control-section">
-                <h3>Graph Options</h3>
-                <button id="generateBtn" class="btn btn-secondary">Generate Random Graph</button>
-                <button id="directedBtn" class="btn btn-secondary">Toggle Directed</button>
-                <button id="weightedBtn" class="btn btn-secondary">Toggle Weighted</button>
-                <button id="exportBtn" class="btn btn-secondary">Export Graph</button>
-                <button id="importBtn" class="btn btn-secondary">Import Graph</button>
-            </div>
-
-
-            <div class="info-panel">
-                <!-- strong makes text bold -->
-
-                <strong>Instructions:</strong><br> <!-- <br> is a line-break -->
-                • Click to add nodes<br>
-                • Use Edge tool to connect nodes<br>
-                • Select an algorithm and click Run<br>
-                • Right-click nodes to set start/end
-            </div>
-        </div>
-    </aside>
-
-    <!-- main tag specifies the main content. shuld only be one main element ina  doc-->
-    <main id="main">
-        <!-- toolbar to switch between nodes, edges, etc... -->
-        <div id="toolbar">
-            <button class="tool-btn active" data-tool="node">
-                <!-- using svg's for vector graphics that look sharp -->
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                    <circle cx="10" cy="10" r="8"/>
-                </svg>
-                Node
-            </button>
-            <button class="tool-btn" data-tool="edge">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 20 20">
-                    <path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke-width="2"/>
-                </svg>
-                Edge
-            </button>
-            <button class="tool-btn" data-tool="move">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-                </svg>
-                Move
-            </button>
-        </div>
-
-        <!-- div container for canvas -->
-        <div id="canvas-container">
-            <!--
-                canvas tag to draw graphics on the fly with JS.
-                this is where graph visualization will appear.
-                -->
-            <canvas id="stage"></canvas>
-        </div>
-
-        <div id="status-bar">
-            <div class="status-item">
-                <span class="status-indicator"></span>
-                <span id="statusText">Ready</span>
-            </div>
-            <div class="status-item">
-                Nodes: <span id="nodeCount">0</span>
-            </div>
-            <div class="status-item">
-                Edges: <span id="edgeCount">0</span>
-            </div>
-             <div class="status-item">
-                 Algorithm: <span id="currentAlgo">None</span>
-             </div>
-        </div>
-    </main>
-
-    <div id="weightModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Set Edge Weight</h2>
-            </div>
-
-            <!-- type="number" makes the input field only accept numbers -->
-            <input type="number" id="weightInput" class="weight-input" placeholder="Enter weight (default: 1)" value="1">
-            <button id="weightConfirm" class="btn btn-primary">Confirm</button>
-            <button id="weightCancel" class="btn btn-secondary">Cancel</button>
-        </div>
+    <div class="sidebar-header">
+        <h1>Graph Visualizer</h1>
+        <p>Interactive algorithm visualization tool</p>
     </div>
 
-    <!--
-    <script> tag to refer to the executable JS file.
-    The logic for drawing graphs, handling clicks, and running the algorithms will be placed into
-    Best practice is to place the scripts at the end of the body so the browser can
-    load and display all the static html content first, making the page load faster.
-    -->
-    <script src="main.js"></script>
+    <div class="sidebar-content">
+        <!-- algorithm selection buttons -->
+        <div class="control-section">
+            <h3>Graph Algorithms</h3>
+
+            <!-- button tag to create a clickable button
+            - 'class="btn btn-secondary algo-btn"' applies three different CSS classes
+                    to use multiple sets of styles and objects
+            - 'data-algo="dijkstra"' to store the data of this element. in this case its the algorithm name
+            -->
+            <button class="btn btn-secondary algo-btn" data-algo="dijkstra">Dijkstra's Shortest Path</button>
+            <button class="btn btn-secondary algo-btn" data-algo="bfs">Breadth-First Search</button>
+            <button class="btn btn-secondary algo-btn" data-algo="dfs">Depth-First Search</button>
+            <button class="btn btn-secondary algo-btn" data-algo="prim">Prim's MST</button>
+            <button class="btn btn-secondary algo-btn" data-algo="kruskal">Kruskal's MST</button>
+            <button class="btn btn-secondary algo-btn" data-algo="bellman-ford">Bellman-Ford</button>
+        </div>
+
+        <!-- div for playback controls -->
+        <div class="control-section">
+            <h3>Controls</h3>
+            <button id="runBtn" class="btn btn-primary">
+                <!-- span tag -->
+                <span>▶</span> Run Algorithm
+            </button>
+            <button id="stepBtn" class="btn btn-secondary">Step Forward</button>
+            <button id="resetBtn" class="btn btn-secondary">Reset</button>
+            <button id="clearBtn" class="btn btn-danger">Clear Graph</button>
+
+            <div class="speed-control">
+                <!-- label tag, links it to the speed control <input> so user can access the slider -->
+                <label for="speedSlider">Animation Speed</label>
+                <!--
+                    An <input> tag specifies a field where the user can enter data.
+                    type="range" makes it a slider control
+                    id="speedSlider" gives it a unique ID to link with the label
+                    'min' 'max' and 'value' set the ranges and default value of the slider
+                    -->
+                <input type="range" id="speedSlider" class="speed-slider" min="1" max="10" value="5">
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3>Graph Options</h3>
+            <button id="generateBtn" class="btn btn-secondary">Generate Random Graph</button>
+            <button id="directedBtn" class="btn btn-secondary">Toggle Directed</button>
+            <button id="weightedBtn" class="btn btn-secondary">Toggle Weighted</button>
+            <button id="exportBtn" class="btn btn-secondary">Export Graph</button>
+            <button id="importBtn" class="btn btn-secondary">Import Graph</button>
+        </div>
+
+
+        <div class="info-panel">
+            <!-- strong makes text bold -->
+
+            <strong>Instructions:</strong><br> <!-- <br> is a line-break -->
+            • Click to add nodes<br>
+            • Use Edge tool to connect nodes<br>
+            • Select an algorithm and click Run<br>
+            • Right-click nodes to set start/end
+        </div>
+    </div>
+</aside>
+
+<!-- main tag specifies the main content. shuld only be one main element ina  doc-->
+<main id="main">
+    <!-- toolbar to switch between nodes, edges, etc... -->
+    <div id="toolbar">
+        <button class="tool-btn active" data-tool="node">
+            <!-- using svg's for vector graphics that look sharp -->
+            <svg fill="currentColor" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="8"/>
+            </svg>
+            Node
+        </button>
+        <button class="tool-btn" data-tool="edge">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 20 20">
+                <path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke-width="2"/>
+            </svg>
+            Edge
+        </button>
+        <button class="tool-btn" data-tool="move">
+            <svg fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+            </svg>
+            Move
+        </button>
+    </div>
+
+    <!-- div container for canvas -->
+    <div id="canvas-container">
+        <!--
+            canvas tag to draw graphics on the fly with JS.
+            this is where graph visualization will appear.
+            -->
+        <canvas id="stage"></canvas>
+    </div>
+
+    <div id="status-bar">
+        <div class="status-item">
+            <span class="status-indicator"></span>
+            <span id="statusText">Ready</span>
+        </div>
+        <div class="status-item">
+            Nodes: <span id="nodeCount">0</span>
+        </div>
+        <div class="status-item">
+            Edges: <span id="edgeCount">0</span>
+        </div>
+        <div class="status-item">
+            Algorithm: <span id="currentAlgo">None</span>
+        </div>
+    </div>
+</main>
+
+<!-- Weight Modal -->
+<div id="weightModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Set Edge Weight</h2>
+        </div>
+
+        <!-- type="number" makes the input field only accept numbers -->
+        <input type="number" id="weightInput" class="weight-input" placeholder="Enter weight (default: 1)" value="1">
+        <button id="weightConfirm" class="btn btn-primary">Confirm</button>
+        <button id="weightCancel" class="btn btn-secondary">Cancel</button>
+    </div>
+</div>
+
+<!-- Step explainer components will be added dynamically by JavaScript -->
+
+<!--
+<script> tag to refer to the executable JS file.
+The logic for drawing graphs, handling clicks, and running the algorithms will be placed into
+Best practice is to place the scripts at the end of the body so the browser can
+load and display all the static html content first, making the page load faster.
+-->
+<script src="step-explainer.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
 

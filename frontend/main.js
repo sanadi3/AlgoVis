@@ -31,6 +31,9 @@ class GraphVisualizer {
         this.useBackend = false;
         this.backendUrl = 'http://localhost:3001';
 
+        // Add step explainer
+        this.stepExplainer = new StepExplainer(this);
+
         // colors
         this.nodeRadius = 25;
         this.colors = {
@@ -372,6 +375,9 @@ class GraphVisualizer {
         this.isRunning = true;
         document.getElementById('runBtn').innerHTML = '<span>⏸</span> Pause';
 
+        // Clear previous explanations
+        this.stepExplainer.clear();
+
         // switch staements
         switch (this.currentAlgorithm) {
             case 'dijkstra':
@@ -403,6 +409,15 @@ class GraphVisualizer {
             return;
         }
 
+        // Start explanation
+        this.stepExplainer.startAlgorithm('dijkstra');
+
+        // Add initialization step
+        this.stepExplainer.addStep('init', {
+            startNode: this.startNode.name,
+            totalNodes: this.nodes.length
+        });
+
         // Initialize
         this.nodes.forEach(node => {
             node.distance = node === this.startNode ? 0 : Infinity;
@@ -419,6 +434,17 @@ class GraphVisualizer {
 
             if (current.distance === Infinity) break;
 
+            // Add step for node selection
+            this.stepExplainer.addStep('select', {
+                node: current.name,
+                distance: current.distance,
+                unvisitedCount: unvisited.length,
+                queue: unvisited.slice(0, 5).map(n => ({
+                    node: n.name,
+                    priority: n.distance === Infinity ? '∞' : n.distance
+                }))
+            });
+
             current.visited = true;
             current.state = 'current';
             // drawing after changing state
@@ -430,7 +456,20 @@ class GraphVisualizer {
             for (const {node: neighbor, weight} of neighbors) {
                 if (!neighbor.visited) {
                     const altDistance = current.distance + weight;
-                    if (altDistance < neighbor.distance) { // found shorter distance
+                    const oldDistance = neighbor.distance;
+                    const improved = altDistance < neighbor.distance;
+
+                    // Add step for edge relaxation
+                    this.stepExplainer.addStep('relax', {
+                        from: current.name,
+                        to: neighbor.name,
+                        weight: weight,
+                        currentDist: current.distance,
+                        oldDist: oldDistance === Infinity ? '∞' : oldDistance,
+                        improved: improved
+                    });
+
+                    if (improved) {
                         neighbor.distance = altDistance;
                         neighbor.parent = current;
                     }
@@ -440,6 +479,12 @@ class GraphVisualizer {
             current.state = 'visited';
             this.draw();
         }
+
+        // Add completion step
+        this.stepExplainer.addStep('complete', {
+            processed: this.nodes.filter(n => n.visited).length,
+            relaxed: this.edges.length
+        });
 
         // Highlight shortest path if end node selected
         if (this.endNode && this.endNode.parent !== null) { // found a path to node
@@ -466,6 +511,14 @@ class GraphVisualizer {
             return;
         }
 
+        // Start explanation
+        this.stepExplainer.startAlgorithm('bfs');
+
+        // Add initialization step
+        this.stepExplainer.addStep('init', {
+            startNode: this.startNode.name
+        });
+
         // Initialize
         this.nodes.forEach(node => {
             node.visited = false;
@@ -478,6 +531,13 @@ class GraphVisualizer {
 
         while (queue.length > 0 && this.isRunning) {
             const current = queue.shift();
+
+            // Add dequeue step
+            this.stepExplainer.addStep('dequeue', {
+                node: current.name,
+                queue: queue.map(n => n.name)
+            });
+
             current.state = 'current';
             this.draw();
             await this.sleep(1000 / this.animationSpeed);
@@ -491,6 +551,13 @@ class GraphVisualizer {
                     neighbor.state = 'visited';
                     queue.push(neighbor);
 
+                    // Add visit step
+                    this.stepExplainer.addStep('visit', {
+                        node: neighbor.name,
+                        from: current.name,
+                        queueSize: queue.length
+                    });
+
                     // Highlight edge
                     const edge = this.edges.find(e =>
                         (e.from === current && e.to === neighbor) ||
@@ -502,6 +569,11 @@ class GraphVisualizer {
                         await this.sleep(500 / this.animationSpeed);
                         edge.state = 'default';
                     }
+                } else {
+                    // Add skip step for already visited nodes
+                    this.stepExplainer.addStep('skip', {
+                        node: neighbor.name
+                    });
                 }
             }
 
@@ -516,6 +588,14 @@ class GraphVisualizer {
             return;
         }
 
+        // Start explanation
+        this.stepExplainer.startAlgorithm('dfs');
+
+        // Add initialization step
+        this.stepExplainer.addStep('init', {
+            startNode: this.startNode.name
+        });
+
         // Initialize
         this.nodes.forEach(node => {
             node.visited = false;
@@ -523,13 +603,26 @@ class GraphVisualizer {
             node.state = 'default';
         });
 
-        await this.dfsRecursive(this.startNode);
+        // Track call stack for visualization
+        this.callStack = [];
+
+        await this.dfsRecursive(this.startNode, 0);
     }
 
-    async dfsRecursive(node) {
+    async dfsRecursive(node, depth) {
         if (!this.isRunning) return;
 
+        this.callStack.push(node.name);
+
         node.visited = true;
+
+        // Add visit step
+        this.stepExplainer.addStep('visit', {
+            node: node.name,
+            from: node.parent ? node.parent.name : null,
+            depth: depth
+        });
+
         node.state = 'current';
         this.draw();
         await this.sleep(1000 / this.animationSpeed);
@@ -538,6 +631,12 @@ class GraphVisualizer {
         for (const {node: neighbor} of neighbors) {
             if (!neighbor.visited) {
                 neighbor.parent = node;
+
+                // Add explore step
+                this.stepExplainer.addStep('explore', {
+                    node: neighbor.name,
+                    callStack: [...this.callStack]
+                });
 
                 // Highlight edge
                 const edge = this.edges.find(e =>
@@ -550,10 +649,20 @@ class GraphVisualizer {
                     await this.sleep(500 / this.animationSpeed);
                 }
 
-                await this.dfsRecursive(neighbor);
+                await this.dfsRecursive(neighbor, depth + 1);
 
                 if (edge) edge.state = 'default';
             }
+        }
+
+        this.callStack.pop();
+
+        // Add backtrack step if there's a parent
+        if (node.parent && this.callStack.length > 0) {
+            this.stepExplainer.addStep('backtrack', {
+                from: node.name,
+                to: node.parent.name
+            });
         }
 
         node.state = 'visited';
@@ -562,6 +671,9 @@ class GraphVisualizer {
 
     async prim() {
         if (this.nodes.length === 0) return;
+
+        // Start explanation
+        this.stepExplainer.startAlgorithm('prim');
 
         // Initialize
         this.nodes.forEach(node => {
@@ -577,7 +689,14 @@ class GraphVisualizer {
         const startNode = this.nodes[0];
         startNode.key = 0;
 
+        // Add init step
+        this.stepExplainer.addStep('init', {
+            startNode: startNode.name
+        });
+
         const queue = [...this.nodes];
+        let mstWeight = 0;
+        let mstEdges = 0;
 
         while (queue.length > 0 && this.isRunning) {
             // Find minimum key node
@@ -587,6 +706,16 @@ class GraphVisualizer {
             if (current.key === Infinity) break;
 
             current.inMST = true;
+            mstEdges++;
+            if (current.parent) mstWeight += current.key;
+
+            // Add select step
+            this.stepExplainer.addStep('select', {
+                node: current.name,
+                key: current.key === 0 ? 0 : current.key,
+                mstSize: mstEdges
+            });
+
             current.state = 'current';
             this.draw();
             await this.sleep(1000 / this.animationSpeed);
@@ -595,8 +724,17 @@ class GraphVisualizer {
             const neighbors = this.getNeighbors(current);
             for (const {node: neighbor, weight} of neighbors) {
                 if (!neighbor.inMST && weight < neighbor.key) {
+                    const oldKey = neighbor.key;
                     neighbor.key = weight;
                     neighbor.parent = current;
+
+                    // Add update step
+                    this.stepExplainer.addStep('update', {
+                        node: neighbor.name,
+                        from: current.name,
+                        oldKey: oldKey === Infinity ? '∞' : oldKey,
+                        newKey: weight
+                    });
                 }
             }
 
@@ -614,14 +752,27 @@ class GraphVisualizer {
             current.state = 'path';
             this.draw();
         }
+
+        // Add complete step
+        this.stepExplainer.addStep('complete', {
+            totalWeight: mstWeight,
+            edgeCount: mstEdges - 1
+        });
     }
 
     async kruskal() {
         if (this.nodes.length === 0) return;
 
+        // Start explanation
+        this.stepExplainer.startAlgorithm('kruskal');
+
+        // Add initialization step
+        this.stepExplainer.addStep('init', {});
+
         // Initialize disjoint set
         const parent = {};
         const rank = {};
+        let components = this.nodes.length;
 
         this.nodes.forEach(node => {
             parent[node.id] = node.id;
@@ -658,25 +809,61 @@ class GraphVisualizer {
             return true;
         };
 
+        let mstEdges = 0;
+        let mstWeight = 0;
+
         // Process edges
         for (const edge of sortedEdges) {
             if (!this.isRunning) break;
+
+            // Add consider step
+            this.stepExplainer.addStep('consider', {
+                from: edge.from.name,
+                to: edge.to.name,
+                weight: edge.weight
+            });
 
             edge.state = 'highlight';
             this.draw();
             await this.sleep(1000 / this.animationSpeed);
 
             if (union(edge.from.id, edge.to.id)) {
+                // Edge added to MST
+                const oldComponents = components;
+                components--;
+                mstEdges++;
+                mstWeight += edge.weight;
+
+                this.stepExplainer.addStep('add', {
+                    from: edge.from.name,
+                    to: edge.to.name,
+                    componentsBefore: oldComponents,
+                    componentsAfter: components,
+                    mstSize: mstEdges
+                });
+
                 edge.state = 'path';
                 edge.from.state = 'path';
                 edge.to.state = 'path';
             } else {
+                // Edge would create cycle
+                this.stepExplainer.addStep('skip', {
+                    from: edge.from.name,
+                    to: edge.to.name
+                });
+
                 edge.state = 'default';
             }
 
             this.draw();
             await this.sleep(500 / this.animationSpeed);
         }
+
+        // Add completion step
+        this.stepExplainer.addStep('complete', {
+            totalWeight: mstWeight,
+            edgeCount: mstEdges
+        });
     }
 
     async bellmanFord() {
@@ -685,6 +872,16 @@ class GraphVisualizer {
             return;
         }
 
+        // Start explanation
+        this.stepExplainer.startAlgorithm('bellman-ford');
+
+        // Add initialization step
+        this.stepExplainer.addStep('init', {
+            startNode: this.startNode.name,
+            totalNodes: this.nodes.length,
+            totalEdges: this.edges.length
+        });
+
         // Initialize
         this.nodes.forEach(node => {
             node.distance = node === this.startNode ? 0 : Infinity;
@@ -692,9 +889,19 @@ class GraphVisualizer {
             node.state = 'default';
         });
 
+        let improvements = 0;
+        let totalRelaxations = 0;
+
         // Relax edges V-1 times
         for (let i = 0; i < this.nodes.length - 1 && this.isRunning; i++) {
             let updated = false;
+
+            // Add iteration step
+            this.stepExplainer.addStep('iteration', {
+                iteration: i + 1,
+                total: this.nodes.length - 1,
+                edgeCount: this.edges.length
+            });
 
             for (const edge of this.edges) {
                 if (!this.isRunning) break;
@@ -703,12 +910,32 @@ class GraphVisualizer {
                 this.draw();
                 await this.sleep(500 / this.animationSpeed);
 
-                const altDistance = edge.from.distance + edge.weight;
-                if (edge.from.distance !== Infinity && altDistance < edge.to.distance) {
+                const fromDistance = edge.from.distance;
+                const toDistance = edge.to.distance;
+                const altDistance = fromDistance + edge.weight;
+
+                totalRelaxations++;
+
+                // Check if we can improve the distance
+                const canImprove = fromDistance !== Infinity && altDistance < toDistance;
+
+                // Add relaxation step
+                this.stepExplainer.addStep('relax', {
+                    from: edge.from.name,
+                    to: edge.to.name,
+                    weight: edge.weight,
+                    fromDist: fromDistance === Infinity ? '∞' : fromDistance,
+                    toDist: toDistance === Infinity ? '∞' : toDistance,
+                    improved: canImprove
+                });
+
+                if (canImprove) {
                     edge.to.distance = altDistance;
                     edge.to.parent = edge.from;
                     edge.to.state = 'current';
                     updated = true;
+                    improvements++;
+
                     this.draw();
                     await this.sleep(500 / this.animationSpeed);
                     edge.to.state = 'visited';
@@ -718,40 +945,95 @@ class GraphVisualizer {
                 this.draw();
             }
 
-            if (!updated) break;
+            // If no updates were made, we can terminate early
+            if (!updated) {
+                this.stepExplainer.addStep('no-change', {
+                    iteration: i + 1,
+                    saved: this.nodes.length - 1 - (i + 1)
+                });
+                break;
+            }
         }
 
+        // Add cycle check step
+        this.stepExplainer.addStep('cycle-check', {});
+
         // Check for negative cycles
+        let hasNegativeCycle = false;
         for (const edge of this.edges) {
             if (edge.from.distance !== Infinity &&
                 edge.from.distance + edge.weight < edge.to.distance) {
+
+                // Add negative cycle detection step
+                this.stepExplainer.addStep('negative-cycle', {
+                    from: edge.from.name,
+                    to: edge.to.name
+                });
+
+                hasNegativeCycle = true;
                 alert('Negative cycle detected!');
+
+                // Highlight the problematic edge
+                edge.state = 'highlight';
+                edge.from.state = 'current';
+                edge.to.state = 'current';
+                this.draw();
+
                 return;
             }
         }
 
-        // Mark all visited nodes
-        this.nodes.forEach(node => {
-            if (node.distance !== Infinity) {
-                node.state = 'visited';
-            }
-        });
-
-        // Highlight shortest path if end node selected
-        if (this.endNode && this.endNode.distance !== Infinity) {
-            let pathNode = this.endNode;
-            while (pathNode) {
-                pathNode.state = 'path';
-                if (pathNode.parent) {
-                    const edge = this.edges.find(e =>
-                        e.from === pathNode.parent && e.to === pathNode
-                    );
-                    if (edge) edge.state = 'path';
+        if (!hasNegativeCycle) {
+            // Mark all visited nodes
+            this.nodes.forEach(node => {
+                if (node.distance !== Infinity) {
+                    node.state = 'visited';
                 }
-                pathNode = pathNode.parent;
-                this.draw();
-                await this.sleep(500 / this.animationSpeed);
+            });
+
+            // Add completion step
+            this.stepExplainer.addStep('complete', {
+                iterations: this.nodes.length - 1,
+                relaxations: totalRelaxations,
+                improvements: improvements
+            });
+
+            // Highlight shortest path if end node selected
+            if (this.endNode && this.endNode.distance !== Infinity) {
+                await this.highlightPath();
             }
+        }
+    }
+
+    // Helper method to highlight the shortest path
+    async highlightPath() {
+        let pathNode = this.endNode;
+        const path = [];
+
+        // Build path from end to start
+        while (pathNode) {
+            path.unshift(pathNode);
+            pathNode = pathNode.parent;
+        }
+
+        // Animate path highlighting
+        for (let i = 0; i < path.length; i++) {
+            const node = path[i];
+            node.state = 'path';
+
+            if (i > 0) {
+                const prevNode = path[i - 1];
+                const edge = this.edges.find(e =>
+                    (e.from === prevNode && e.to === node) ||
+                    (!this.isDirected && e.from === node && e.to === prevNode)
+                );
+                if (edge) {
+                    edge.state = 'path';
+                }
+            }
+
+            this.draw();
+            await this.sleep(500 / this.animationSpeed);
         }
     }
 
