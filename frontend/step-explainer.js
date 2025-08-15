@@ -1,131 +1,93 @@
 class DraggablePanel {
-    constructor(panelElement, handleElement){
+    constructor(panelElement, handleElement) {
         this.panel = panelElement;
         this.handle = handleElement || panelElement;
         this.isDragging = false;
-        this.currentX = 0;
-        this.currentY = 0;
         this.initialX = 0;
-        this.initalY = 0;
+        this.initialY = 0; // Fixed typo '
 
         this.init();
     }
 
     init() {
-        const rect = this.panel.getBoundingClientRect();
-        this.currentX = rect.left;
-        this.currentY = rect.top;
-
-        // prevent dragging when clicking
         const interactiveElements = this.handle.querySelectorAll('button, input, select, textarea');
         interactiveElements.forEach(elem => {
             elem.addEventListener('mousedown', (e) => e.stopPropagation());
             elem.addEventListener('touchstart', (e) => e.stopPropagation());
         });
 
-        // mouse specific events
+        // Mouse events
         this.handle.addEventListener('mousedown', this.dragStart.bind(this));
         document.addEventListener('mousemove', this.drag.bind(this));
         document.addEventListener('mouseup', this.dragEnd.bind(this));
 
-        // touch for mobile
+        // Touch events
         this.handle.addEventListener('touchstart', this.dragStart.bind(this), { passive: false });
-        document.addEventListener('touchmove', this.drag.bind(this), {passive: false});
+        document.addEventListener('touchmove', this.drag.bind(this), { passive: false });
         document.addEventListener('touchend', this.dragEnd.bind(this));
     }
 
     dragStart(e) {
-        if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
             return;
         }
+        e.preventDefault();
 
+        // FIX 1: Convert right/bottom positioning to left/top to avoid jump
         const rect = this.panel.getBoundingClientRect();
+        this.panel.style.left = `${rect.left}px`;
+        this.panel.style.top = `${rect.top}px`;
+        this.panel.style.right = 'auto';
+        this.panel.style.bottom = 'auto';
 
-        if (e.type === 'touchstart') {
-            this.initialX = e.touches[0].clientX - rect.left;
-            this.initialY = e.touches[0].clientY - rect.top;
-        } else {
-            this.initialX = e.clientX - rect.left;
-            this.initalY = e.clientY - rect.top;
-        }
+        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+        // Calculate the mouse's offset from the panel's top-left corner
+        this.initialX = clientX - rect.left;
+        this.initialY = clientY - rect.top; // Fixed typo
 
         this.isDragging = true;
         this.panel.classList.add('dragging');
-
-        // store current z-index and set it to high while dragging
-        this.originalZIndex = this.panel.style.zIndex;
-        this.panel.style.zIndex = '10000';
-
-        // prevent text selection
-        e.preventDefault();
     }
 
     drag(e) {
-        if(this.isDragging) {
-            e.preventDefault();
+        if (!this.isDragging) return;
 
-            let clientX, clientY;
+        e.preventDefault();
 
-            if(e.type === 'touchmove') {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
+        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
 
-            // calculate new position
-            this.currentX = clientX = this.initialX;
-            this.currentY = clientY - this.initialY;
+        // FIX 2: Correct position calculation
+        let newX = clientX - this.initialX;
+        let newY = clientY - this.initialY;
 
-            // keep panel within viewport
-            const rect = this.panel.getBoundingClientRect();
-            const padding = 20; // minimum visible
+        // Keep panel within viewport
+        const padding = 20; // Minimum pixels to keep visible
+        const panelWidth = this.panel.offsetWidth;
+        const panelHeight = this.panel.offsetHeight;
 
-            // calculate bounds
-            const minX = -rect.width + padding;
-            const maxX = window.innerWidth - padding;
-            const minY = 0;
-            const maxY = window.innerHeight - padding;
+        // Apply bounds
+        newX = Math.max(-panelWidth + padding, Math.min(newX, window.innerWidth - padding));
+        newY = Math.max(0, Math.min(newY, window.innerHeight - padding));
 
-            // apply bounds
-            this.currentX = Math.max(minX, Math.min(this.currentX, maxX));
-            this.currentY = Math.max(minY, Math.min(this.currentY, maxY));
-
-            // apply position
-            this.setPosition(this.currentX, this.currentY);
-        }
+        this.setPosition(newX, newY);
     }
 
-    dragEnd(e) {
-        if(!this.isDragging) {
-            return;
-        }
-
+    dragEnd() {
+        if (!this.isDragging) return;
         this.isDragging = false;
         this.panel.classList.remove('dragging');
-
-        // restore z index
-        this.panel.style.zIndex = this.originalZIndex || '';
     }
 
     setPosition(x, y) {
-        this.panel.style.left = x + 'px';
-        this.panel.style.top = y + 'px';
-
-        //remove any transofmr
-        this.panel.style.transform = 'none';
+        this.panel.style.transform = `translate(${x}px, ${y}px)`;
+        // Using transform is often smoother than left/top
+        this.panel.style.left = `0px`;
+        this.panel.style.top = `0px`;
     }
 
-
-    centerPanel() {
-        const rect = this.panel.getBoundingClientRect();
-        const x = (window.innerWidth - rect.width) / 2;
-        const y = (window.innerHeight - rect.height) / 2;
-        this.setPosition(x, y);
-        this.currentX = x;
-        this.currentY = y;
-    }
 }
 
 class StepExplainer {
