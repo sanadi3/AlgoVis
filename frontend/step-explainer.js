@@ -7,14 +7,21 @@ class DraggablePanel {
         this.currentY = 0;
         this.initialX = 0;
         this.initalY = 0;
-        this.xOffset = 0;
-        this.yOffset = 0;
 
         this.init();
     }
 
     init() {
-        this.handle.style.cursor = 'move';
+        const rect = this.panel.getBoundingClientRect();
+        this.currentX = rect.left;
+        this.currentY = rect.top;
+
+        // prevent dragging when clicking
+        const interactiveElements = this.handle.querySelectorAll('button, input, select, textarea');
+        interactiveElements.forEach(elem => {
+            elem.addEventListener('mousedown', (e) => e.stopPropagation());
+            elem.addEventListener('touchstart', (e) => e.stopPropagation());
+        });
 
         // mouse specific events
         this.handle.addEventListener('mousedown', this.dragStart.bind(this));
@@ -28,56 +35,96 @@ class DraggablePanel {
     }
 
     dragStart(e) {
-        if (e.type === 'touchstart') {
-            this.initialX = e.touches[0].clientX - this.xOffset;
-            this.initialY = e.touches[0].clientY - this.yOffset;
-        } else {
-            this.initialX = e.clientX - this.xOffset;
-            this.initalY = e.clientY - this.yOffset;
+        if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+            return;
         }
 
-        if(e.target === this.handle || this.handle.contains(e.target)) {
-            this.isDragging = true;
-            this.panel.stylezIndex = '1000'; // keep it in the front of the screen while dragging
+        const rect = this.panel.getBoundingClientRect();
+
+        if (e.type === 'touchstart') {
+            this.initialX = e.touches[0].clientX - rect.left;
+            this.initialY = e.touches[0].clientY - rect.top;
+        } else {
+            this.initialX = e.clientX - rect.left;
+            this.initalY = e.clientY - rect.top;
         }
+
+        this.isDragging = true;
+        this.panel.classList.add('dragging');
+
+        // store current z-index and set it to high while dragging
+        this.originalZIndex = this.panel.style.zIndex;
+        this.panel.style.zIndex = '10000';
+
+        // prevent text selection
+        e.preventDefault();
     }
 
     drag(e) {
         if(this.isDragging) {
             e.preventDefault();
 
+            let clientX, clientY;
+
             if(e.type === 'touchmove') {
-                this.currentX = e.touches[0].clientX - this.initialX;
-                this.currentY = e.touches[0].clientY - this.initialY;
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
             } else {
-                this.currentX = e.clientX - this.initialX;
-                this.currentY = e.clientY - this.initialY;
+                clientX = e.clientX;
+                clientY = e.clientY;
             }
 
-            this.xOffset = this.currentX;
-            this.yOffset = this.currentY;
+            // calculate new position
+            this.currentX = clientX = this.initialX;
+            this.currentY = clientY - this.initialY;
 
-            // keep panel within bounds
+            // keep panel within viewport
             const rect = this.panel.getBoundingClientRect();
-            const maxX = window.innerWidth - rect.width;
-            const maxY = window.innerHeight - rect.height;
+            const padding = 20; // minimum visible
 
-            this.currentX = Math.max(0, Math.min(this.currentX, maxX));
-            this.currentY = Math.max(0, Math.min(this.currentY, maxY));
+            // calculate bounds
+            const minX = -rect.width + padding;
+            const maxX = window.innerWidth - padding;
+            const minY = 0;
+            const maxY = window.innerHeight - padding;
 
-            this.setTranslate(this.currentX, this.currentY);
+            // apply bounds
+            this.currentX = Math.max(minX, Math.min(this.currentX, maxX));
+            this.currentY = Math.max(minY, Math.min(this.currentY, maxY));
+
+            // apply position
+            this.setPosition(this.currentX, this.currentY);
         }
     }
 
     dragEnd(e) {
-        this.initialX = this.currentX;
-        this.initialY = this.currentY;
+        if(!this.isDragging) {
+            return;
+        }
+
         this.isDragging = false;
-        this.panel.style.zIndex = ''; // reset z index when dragging is done
+        this.panel.classList.remove('dragging');
+
+        // restore z index
+        this.panel.style.zIndex = this.originalZIndex || '';
     }
 
-    setTranslate(xPos, yPos) {
-        this.panel.style.transform = `translate(${xPos}px, ${yPos}px)`;
+    setPosition(x, y) {
+        this.panel.style.left = x + 'px';
+        this.panel.style.top = y + 'px';
+
+        //remove any transofmr
+        this.panel.style.transform = 'none';
+    }
+
+
+    centerPanel() {
+        const rect = this.panel.getBoundingClientRect();
+        const x = (window.innerWidth - rect.width) / 2;
+        const y = (window.innerHeight - rect.height) / 2;
+        this.setPosition(x, y);
+        this.currentX = x;
+        this.currentY = y;
     }
 }
 
@@ -107,20 +154,20 @@ class StepExplainer {
     }
 
     makePanelsDraggable() {
-        // make explanation panel draggable by header
+        // Make explanation panel draggable by its header
         const explanationPanel = document.getElementById('explanation-panel');
         const explanationHeader = explanationPanel.querySelector('.explanation-header');
-        new DraggablePanel(explanationPanel, explanationHeader);
+        this.explanationDraggable = new DraggablePanel(explanationPanel, explanationHeader);
 
-        // make pseudocode panel draggable by header
+        // Make pseudocode panel draggable by its header
         const pseudocodePanel = document.getElementById('pseudocode-panel');
         const pseudocodeHeader = pseudocodePanel.querySelector('.pseudocode-header');
-        new DraggablePanel(pseudocodePanel, pseudocodeHeader);
+        this.pseudocodeDraggable = new DraggablePanel(pseudocodePanel, pseudocodeHeader);
 
-        // make step counter dragbale
+        // Make step counter draggable
         const stepCounter = document.querySelector('.step-counter');
         if (stepCounter) {
-            new DraggablePanel(stepCounter, stepCounter);
+            this.stepCounterDraggable = new DraggablePanel(stepCounter, stepCounter);
         }
     }
 
