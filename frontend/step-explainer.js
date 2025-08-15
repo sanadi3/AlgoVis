@@ -20,25 +20,46 @@ class StepExplainer {
     }
 
     createPanels() {
-        // explanation panel
+        // Create explanation panel
         const explanationPanel = document.createElement('div');
         explanationPanel.id = 'explanation-panel';
         explanationPanel.innerHTML = `
-        <div class="explanation-header">
-           <h3>Algorithm Steps</h3>
-           <button class="minimize-btn"></button>
-        </div>
-        <div class="explanation-content">
-            <div id="steps-container"></div>
-        </div>
+            <div class="explanation-header">
+                <h3>Algorithm Steps</h3>
+                <button class="minimize-btn"></button>
+            </div>
+            <div class="explanation-content">
+                <div id="steps-container"></div>
+            </div>
         `;
 
-        // create toggle button
+        // Create pseudocode panel
+        const pseudocodePanel = document.createElement('div');
+        pseudocodePanel.id = 'pseudocode-panel';
+        pseudocodePanel.innerHTML = `
+            <div class="pseudocode-header">
+                <span id="algorithm-name">Algorithm</span> Pseudocode
+            </div>
+            <div class="pseudocode-content" id="pseudocode-content"></div>
+        `;
+
+        // Create step counter
+        const stepCounter = document.createElement('div');
+        stepCounter.className = 'step-counter';
+        stepCounter.innerHTML = `
+            <span>Step</span>
+            <span class="step-counter-number">
+                <span id="current-step">0</span> / <span id="total-steps">0</span>
+            </span>
+        `;
+
+        // Create toggle button
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'toggle-explanation-btn';
         toggleBtn.textContent = 'Show Steps';
         toggleBtn.id = 'toggle-explanation';
 
+        // Append all elements to body
         document.body.appendChild(explanationPanel);
         document.body.appendChild(pseudocodePanel);
         document.body.appendChild(stepCounter);
@@ -56,13 +77,13 @@ class StepExplainer {
     }
 
     toggle() {
-        this.isActive = !this.isActive();
+        this.isActive = !this.isActive;
         const panel = document.getElementById('explanation-panel');
         const pseudocode = document.getElementById('pseudocode-panel');
         const counter = document.querySelector('.step-counter');
         const toggleBtn = document.getElementById('toggle-explanation');
 
-        if(this.isActive) {
+        if (this.isActive) {
             panel.classList.add('active');
             pseudocode.classList.add('active');
             counter.classList.add('active');
@@ -77,7 +98,7 @@ class StepExplainer {
         }
     }
 
-    toggleMinimize () {
+    toggleMinimize() {
         this.isMinimized = !this.isMinimized;
         const panel = document.getElementById('explanation-panel');
         panel.classList.toggle('minimized');
@@ -87,10 +108,10 @@ class StepExplainer {
         this.clear();
         this.currentAlgorithm = this.algorithms[algorithmName];
 
-        if(this.currentAlgorithm) {
+        if (this.currentAlgorithm) {
             this.showPseudocode(algorithmName);
 
-            if(!this.isActive) {
+            if (!this.isActive) {
                 this.toggle();
             }
         }
@@ -101,34 +122,34 @@ class StepExplainer {
         const algorithmNameSpan = document.getElementById('algorithm-name');
 
         algorithmNameSpan.textContent = algorithmName.charAt(0).toUpperCase() +
-                                                        algorithmName.slice(1).replace('-', ' ');
+            algorithmName.slice(1).replace('-', ' ');
 
-        if(this.currentAlgorithm && this.currentAlgorithm.pseudocode) {
+        if (this.currentAlgorithm && this.currentAlgorithm.pseudocode) {
             pseudocodeContent.innerHTML = this.currentAlgorithm.pseudocode
-                .split('/n')
+                .split('\n')
                 .map((line, index) => `<div class="pseudocode-line" data-line="${index}">${line}</div>`)
                 .join('');
         }
     }
 
     addStep(type, data) {
-        if(!this.currentAlgorithm) return;
+        if (!this.currentAlgorithm) return;
 
         const step = this.currentAlgorithm.generateStep(type, data);
         if (!step) return;
 
-        this.steps.psuh(step);
+        this.steps.push(step);
         this.renderStep(step, this.steps.length - 1);
         this.updateCounter();
 
-        // highlight current line
+        // Highlight current line
         if (step.pseudocodeLine !== undefined) {
-            this.highlightPseudocodeLine(step.pseucodeLine);
+            this.highlightPseudocodeLine(step.pseudocodeLine);
         }
 
-        // auto scroll
+        // Auto scroll
         const container = document.getElementById('steps-container');
-        if(container) {
+        if (container) {
             container.scrollTop = container.scrollHeight;
         }
     }
@@ -247,9 +268,15 @@ class StepExplainer {
     clear() {
         this.steps = [];
         this.currentStepIndex = 0;
-        document.getElementById('steps-container').innerHTML = '';
-        document.getElementById('current-step').textContent = '0';
-        document.getElementById('total-steps').textContent = '0';
+        const container = document.getElementById('steps-container');
+        if (container) {
+            container.innerHTML = '';
+        }
+
+        const currentStep = document.getElementById('current-step');
+        const totalSteps = document.getElementById('total-steps');
+        if (currentStep) currentStep.textContent = '0';
+        if (totalSteps) totalSteps.textContent = '0';
 
         // Clear pseudocode highlights
         document.querySelectorAll('.pseudocode-line').forEach(line => {
@@ -283,47 +310,53 @@ class DijkstraExplainer {
         switch (type) {
             case 'init':
                 return {
-                    text: `Starting Bellman-Ford from node ${data.startNode}`,
-                    code: `distance[${data.startNode}] = 0, all others = ∞`,
-                    pseudocodeLine: 1
+                    text: `Initializing Dijkstra's algorithm with start node ${data.startNode}`,
+                    code: `distances = {all: ∞, ${data.startNode}: 0}`,
+                    pseudocodeLine: 1,
+                    details: {
+                        'Start Node': data.startNode,
+                        'Total Nodes': data.totalNodes
+                    }
                 };
 
-            case 'iteration':
+            case 'select':
                 return {
-                    text: `Starting iteration ${data.iteration} of ${data.total}`,
-                    code: `// Relaxing all edges, round ${data.iteration}`,
-                    pseudocodeLine: 4
+                    text: `Selected node ${data.node} with minimum distance ${data.distance}`,
+                    code: `current = ${data.node} (distance: ${data.distance})`,
+                    pseudocodeLine: 5,
+                    details: {
+                        'Current Node': data.node,
+                        'Distance': data.distance,
+                        'Unvisited': data.unvisitedCount
+                    },
+                    dataStructure: {
+                        type: 'priority-queue',
+                        data: data.queue || []
+                    }
                 };
 
             case 'relax':
                 return {
-                    text: `Relaxing edge ${data.from} → ${data.to}`,
-                    code: `${data.fromDist} + ${data.weight} ${data.improved ? '<' : '≥'} ${data.toDist}`,
-                    pseudocodeLine: 6,
+                    text: `Checking edge ${data.from} → ${data.to}`,
+                    code: `${data.currentDist} + ${data.weight} ${data.improved ? '<' : '≥'} ${data.oldDist}`,
+                    pseudocodeLine: 9,
                     details: {
                         'Edge': `${data.from} → ${data.to}`,
-                        'Current Distance': data.toDist,
-                        'New Distance': data.improved ? (data.fromDist + data.weight) : data.toDist,
+                        'Current Path': data.currentDist + data.weight,
+                        'Previous Best': data.oldDist,
                         'Updated': data.improved ? 'Yes' : 'No'
-                    }
-                };
-
-            case 'negative-cycle':
-                return {
-                    text: 'Negative cycle detected!',
-                    code: 'return "Negative cycle exists"',
-                    pseudocodeLine: 12,
-                    details: {
-                        'Edge': `${data.from} → ${data.to}`,
-                        'Issue': 'Distance can be further reduced'
                     }
                 };
 
             case 'complete':
                 return {
                     text: 'Algorithm complete! All shortest paths found.',
-                    code: 'return distance, parent',
-                    pseudocodeLine: 14
+                    code: 'return distances, previous',
+                    pseudocodeLine: 12,
+                    details: {
+                        'Nodes Processed': data.processed,
+                        'Edges Relaxed': data.relaxed
+                    }
                 };
 
             default:
@@ -331,64 +364,6 @@ class DijkstraExplainer {
         }
     }
 }
-
-
-switch (data.type) {
-    case 'init':
-        return {
-            text: `Initializing Dijkstra's algorithm with start node ${data.startNode}`,
-            code: `distances = {all: ∞, ${data.startNode}: 0}`,
-            pseudocodeLine: 1,
-            details: {
-                'Start Node': data.startNode,
-                'Total Nodes': data.totalNodes
-            }
-        };
-
-    case 'select':
-        return {
-            text: `Selected node ${data.node} with minimum distance ${data.distance}`,
-            code: `current = ${data.node} (distance: ${data.distance})`,
-            pseudocodeLine: 5,
-            details: {
-                'Current Node': data.node,
-                'Distance': data.distance,
-                'Unvisited': data.unvisitedCount
-            },
-            dataStructure: {
-                type: 'priority-queue',
-                data: data.queue || []
-            }
-        };
-
-    case 'relax':
-        return {
-            text: `Checking edge ${data.from} → ${data.to}`,
-            code: `${data.currentDist} + ${data.weight} ${data.improved ? '<' : '≥'} ${data.oldDist}`,
-            pseudocodeLine: 9,
-            details: {
-                'Edge': `${data.from} → ${data.to}`,
-                'Current Path': data.currentDist + data.weight,
-                'Previous Best': data.oldDist,
-                'Updated': data.improved ? 'Yes' : 'No'
-            }
-        };
-
-    case 'complete':
-        return {
-            text: 'Algorithm complete! All shortest paths found.',
-            code: 'return distances, previous',
-            pseudocodeLine: 12,
-            details: {
-                'Nodes Processed': data.processed,
-                'Edges Relaxed': data.relaxed
-            }
-        };
-
-    default:
-        return null;
-}
-
 
 class BFSExplainer {
     constructor() {
@@ -671,97 +646,79 @@ class BellmanFordExplainer {
             case 'init':
                 return {
                     text: `Starting Bellman-Ford from node ${data.startNode}`,
-                    code: `distance[${data.startNode}] = 0, distance[others] = ∞`,
+                    code: `distance[${data.startNode}] = 0, all others = ∞`,
                     pseudocodeLine: 1,
                     details: {
-                        'Source Node': data.startNode,
-                        'Total Nodes': data.nodeCount || 0,
-                        'Total Edges': data.edgeCount || 0
+                        'Start Node': data.startNode,
+                        'Total Nodes': data.totalNodes,
+                        'Total Edges': data.totalEdges
                     }
                 };
 
             case 'iteration':
                 return {
-                    text: `Starting iteration ${data.iteration} of ${data.totalIterations}`,
-                    code: `// Iteration ${data.iteration}: checking all edges`,
+                    text: `Starting iteration ${data.iteration} of ${data.total}`,
+                    code: `// Relaxing all edges, round ${data.iteration}`,
                     pseudocodeLine: 4,
                     details: {
-                        'Iteration': `${data.iteration} / ${data.totalIterations}`,
-                        'Edges to Check': data.edgeCount || 0
+                        'Iteration': `${data.iteration} / ${data.total}`,
+                        'Edges to Check': data.edgeCount
                     }
                 };
 
             case 'relax':
                 return {
-                    text: `Relaxing edge ${data.from} → ${data.to}: ${data.oldDistance} → ${data.newDistance}`,
-                    code: `distance[${data.to}] = ${data.newDistance}, parent[${data.to}] = ${data.from}`,
-                    pseudocodeLine: 7,
-                    details: {
-                        'Edge': `${data.from} → ${data.to}`,
-                        'Weight': data.weight,
-                        'Old Distance': data.oldDistance === Infinity ? '∞' : data.oldDistance,
-                        'New Distance': data.newDistance,
-                        'Via': data.from
-                    }
-                };
-
-            case 'no_relax':
-                return {
-                    text: `Edge ${data.from} → ${data.to} not relaxed (${data.currentDistance} ≤ ${data.proposedDistance})`,
-                    code: `// No update: ${data.currentDistance} ≤ ${data.from}(${data.fromDistance}) + ${data.weight}`,
+                    text: `Checking edge ${data.from} → ${data.to} with weight ${data.weight}`,
+                    code: `${data.fromDist} + ${data.weight} ${data.improved ? '<' : '≥'} ${data.toDist}`,
                     pseudocodeLine: 6,
                     details: {
                         'Edge': `${data.from} → ${data.to}`,
-                        'Current Distance': data.currentDistance === Infinity ? '∞' : data.currentDistance,
-                        'Proposed Distance': data.proposedDistance
+                        'Weight': data.weight,
+                        'Current Distance': data.toDist === Infinity ? '∞' : data.toDist,
+                        'New Distance': data.improved ? (data.fromDist + data.weight) : (data.toDist === Infinity ? '∞' : data.toDist),
+                        'Updated': data.improved ? 'Yes ✓' : 'No'
                     }
                 };
 
-            case 'check_cycle':
+            case 'no-change':
                 return {
-                    text: `Checking for negative cycles (final pass)`,
-                    code: `// Checking all edges for further relaxation`,
-                    pseudocodeLine: 11,
+                    text: `No improvements found in iteration ${data.iteration}`,
+                    code: `// Early termination - distances are optimal`,
+                    pseudocodeLine: 8,
                     details: {
-                        'Phase': 'Negative Cycle Detection',
-                        'Edges Checked': data.edgesChecked || 0
+                        'Status': 'Converged early',
+                        'Iterations Saved': data.saved
                     }
                 };
 
-            case 'negative_cycle':
+            case 'cycle-check':
                 return {
-                    text: `Negative cycle detected! Edge ${data.from} → ${data.to} can still be relaxed`,
-                    code: `return "Negative cycle detected"`,
+                    text: 'Checking for negative weight cycles...',
+                    code: '// One more pass through all edges',
+                    pseudocodeLine: 11
+                };
+
+            case 'negative-cycle':
+                return {
+                    text: '⚠️ Negative cycle detected!',
+                    code: 'return "Negative cycle exists"',
                     pseudocodeLine: 13,
                     details: {
-                        'Problematic Edge': `${data.from} → ${data.to}`,
-                        'Current Distance': data.currentDistance,
-                        'Could Be': data.proposedDistance,
-                        'Status': 'Algorithm Terminated'
+                        'Problem Edge': `${data.from} → ${data.to}`,
+                        'Issue': 'Distance can still be reduced',
+                        'Implication': 'No shortest paths exist'
                     }
                 };
 
             case 'complete':
                 return {
-                    text: `Bellman-Ford complete - shortest paths found`,
-                    code: `return distance, parent`,
+                    text: 'Algorithm complete! All shortest paths found.',
+                    code: 'return distance, parent',
                     pseudocodeLine: 15,
                     details: {
-                        'Reachable Nodes': data.reachableCount || 0,
-                        'Unreachable Nodes': data.unreachableCount || 0,
-                        'Total Relaxations': data.totalRelaxations || 0
-                    }
-                };
-
-            case 'unreachable':
-                return {
-                    text: `Node ${data.node} remains unreachable from source`,
-                    code: `distance[${data.node}] = ∞`,
-                    pseudocodeLine: 1,
-                    details: {
-                        'Node': data.node,
-                        'Distance': '∞',
-                        'Status': 'Unreachable'
+                        'Total Iterations': data.iterations,
+                        'Edges Relaxed': data.relaxations,
+                        'Improvements Made': data.improvements
                     }
                 };
 
@@ -770,6 +727,7 @@ class BellmanFordExplainer {
         }
     }
 }
+
 // Export for use in main.js
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = StepExplainer;
