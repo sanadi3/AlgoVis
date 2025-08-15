@@ -1,11 +1,96 @@
+class DraggablePanel {
+    constructor(panelElement, handleElement){
+        this.panel = panelElement;
+        this.handle = handleElement || panelElement;
+        this.isDragging = false;
+        this.currentX = 0;
+        this.currentY = 0;
+        this.initialX = 0;
+        this.initalY = 0;
+        this.xOffset = 0;
+        this.yOffset = 0;
+
+        this.init();
+    }
+
+    init() {
+        this.handle.style.cursor = 'move';
+
+        // mouse specific events
+        this.handle.addEventListener('mousedown', this.dragStart.bind(this));
+        document.addEventListener('mousemove', this.drag.bind(this));
+        document.addEventListener('mouseup', this.dragEnd.bind(this));
+
+        // touch for mobile
+        this.handle.addEventListener('touchstart', this.dragStart.bind(this), { passive: false });
+        document.addEventListener('touchmove', this.drag.bind(this), {passive: false});
+        document.addEventListener('touchend', this.dragEnd.bind(this));
+    }
+
+    dragStart(e) {
+        if (e.type === 'touchstart') {
+            this.initialX = e.touches[0].clientX - this.xOffset;
+            this.initialY = e.touches[0].clientY - this.yOffset;
+        } else {
+            this.initialX = e.clientX - this.xOffset;
+            this.initalY = e.clientY - this.yOffset;
+        }
+
+        if(e.target === this.handle || this.handle.contains(e.target)) {
+            this.isDragging = true;
+            this.panel.stylezIndex = '1000'; // keep it in the front of the screen while dragging
+        }
+    }
+
+    drag(e) {
+        if(this.isDragging) {
+            e.preventDefault();
+
+            if(e.type === 'touchmove') {
+                this.currentX = e.touches[0].clientX - this.initialX;
+                this.currentY = e.touches[0].clientY - this.initialY;
+            } else {
+                this.currentX = e.clientX - this.initialX;
+                this.currentY = e.clientY - this.initialY;
+            }
+
+            this.xOffset = this.currentX;
+            this.yOffset = this.currentY;
+
+            // keep panel within bounds
+            const rect = this.panel.getBoundingClientRect();
+            const maxX = window.innerWidth - rect.width;
+            const maxY = window.innerHeight - rect.height;
+
+            this.currentX = Math.max(0, Math.min(this.currentX, maxX));
+            this.currentY = Math.max(0, Math.min(this.currentY, maxY));
+
+            this.setTranslate(this.currentX, this.currentY);
+        }
+    }
+
+    dragEnd(e) {
+        this.initialX = this.currentX;
+        this.initialY = this.currentY;
+        this.isDragging = false;
+        this.panel.style.zIndex = ''; // reset z index when dragging is done
+    }
+
+    setTranslate(xPos, yPos) {
+        this.panel.style.transform = `translate(${xPos}px, ${yPos}px)`;
+    }
+}
+
 class StepExplainer {
     constructor(visualizer) {
+        // html components
         this.visualizer = visualizer;
         this.steps = [];
         this.currentStepIndex = 0;
         this.isActive = false;
         this.isMinimized = false;
 
+        // list of algorithms
         this.algorithms = {
             dijkstra: new DijkstraExplainer(),
             bfs: new BFSExplainer(),
@@ -15,15 +100,35 @@ class StepExplainer {
             'bellman-ford': new BellmanFordExplainer()
         };
 
+        // construct diff panels
         this.createPanels();
         this.attachEventListeners();
+        this.makePanelsDraggable();
+    }
+
+    makePanelsDraggable() {
+        // make explanation panel draggable by header
+        const explanationPanel = document.getElementById('explanation-panel');
+        const explanationHeader = explanationPanel.querySelector('.explanation-header');
+        new DraggablePanel(explanationPanel, explanationHeader);
+
+        // make pseudocode panel draggable by header
+        const pseudocodePanel = document.getElementById('pseudocode-panel');
+        const pseudocodeHeader = pseudocodePanel.querySelector('.pseudocode-header');
+        new DraggablePanel(pseudocodePanel, pseudocodeHeader);
+
+        // make step counter dragbale
+        const stepCounter = document.querySelector('.step-counter');
+        if (stepCounter) {
+            new DraggablePanel(stepCounter, stepCounter);
+        }
     }
 
     createPanels() {
         // Create explanation panel
         const explanationPanel = document.createElement('div');
         explanationPanel.id = 'explanation-panel';
-        explanationPanel.innerHTML = `
+        explanationPanel.innerHTML = ` 
             <div class="explanation-header">
                 <h3>Algorithm Steps</h3>
                 <button class="minimize-btn"></button>
@@ -284,6 +389,9 @@ class StepExplainer {
         });
     }
 }
+
+
+
 
 // Algorithm-specific explainers
 class DijkstraExplainer {
