@@ -33,7 +33,9 @@ class DraggablePanel {
         }
         e.preventDefault();
 
-        // FIX 1: Convert right/bottom positioning to left/top to avoid jump
+        // FIX: Reset the transform to prevent a jump on the second drag
+        this.panel.style.transform = 'none';
+
         const rect = this.panel.getBoundingClientRect();
         this.panel.style.left = `${rect.left}px`;
         this.panel.style.top = `${rect.top}px`;
@@ -43,9 +45,8 @@ class DraggablePanel {
         const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
 
-        // Calculate the mouse's offset from the panel's top-left corner
         this.initialX = clientX - rect.left;
-        this.initialY = clientY - rect.top; // Fixed typo
+        this.initialY = clientY - rect.top;
 
         this.isDragging = true;
         this.panel.classList.add('dragging');
@@ -115,21 +116,27 @@ class StepExplainer {
         this.makePanelsDraggable();
     }
 
+    // Corrected function
     makePanelsDraggable() {
         // Make explanation panel draggable by its header
         const explanationPanel = document.getElementById('explanation-panel');
-        const explanationHeader = explanationPanel.querySelector('.explanation-header');
-        this.explanationDraggable = new DraggablePanel(explanationPanel, explanationHeader);
+        if (explanationPanel) {
+            const explanationHeader = explanationPanel.querySelector('.explanation-header');
+            // Use 'const' to declare the variable in this scope
+            const explanationDraggable = new DraggablePanel(explanationPanel, explanationHeader);
+        }
 
         // Make pseudocode panel draggable by its header
         const pseudocodePanel = document.getElementById('pseudocode-panel');
-        const pseudocodeHeader = pseudocodePanel.querySelector('.pseudocode-header');
-        this.pseudocodeDraggable = new DraggablePanel(pseudocodePanel, pseudocodeHeader);
+        if (pseudocodePanel) {
+            const pseudocodeHeader = pseudocodePanel.querySelector('.pseudocode-header');
+            const pseudocodeDraggable = new DraggablePanel(pseudocodePanel, pseudocodeHeader);
+        }
 
         // Make step counter draggable
         const stepCounter = document.querySelector('.step-counter');
         if (stepCounter) {
-            this.stepCounterDraggable = new DraggablePanel(stepCounter, stepCounter);
+            const stepCounterDraggable = new DraggablePanel(stepCounter, stepCounter);
         }
     }
 
