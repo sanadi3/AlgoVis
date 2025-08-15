@@ -332,10 +332,7 @@ class DijkstraExplainer {
     }
 }
 
-// Export for use in main.js
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = StepExplainer;
-}
+
 switch (data.type) {
     case 'init':
         return {
@@ -772,5 +769,9 @@ class BellmanFordExplainer {
                 return null;
         }
     }
+}
+// Export for use in main.js
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = StepExplainer;
 }
 
