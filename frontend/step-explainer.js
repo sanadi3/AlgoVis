@@ -3,53 +3,89 @@ class DraggablePanel {
         this.panel = panelElement;
         this.handle = handleElement || panelElement;
         this.isDragging = false;
-        this.initialX = 0;
-        this.initialY = 0; // Fixed typo '
+        this.currentX = 0;
+        this.currentY = 0;
+        this.initialMouseX = 0;
+        this.initialMouseY = 0;
+        this.rafId = null;
 
         this.init();
     }
 
     init() {
-        const interactiveElements = this.handle.querySelectorAll('button, input, select, textarea');
+        // Store initial position
+        const rect = this.panel.getBoundingClientRect();
+        this.currentX = rect.left;
+        this.currentY = rect.top;
+
+        // Set initial styles for better performance
+        this.panel.style.position = 'fixed';
+        this.panel.style.willChange = 'transform';
+        this.panel.style.left = '0px';
+        this.panel.style.top = '0px';
+        this.panel.style.transform = `translate3d(${this.currentX}px, ${this.currentY}px, 0)`;
+
+        // Remove any conflicting position styles
+        this.panel.style.right = 'auto';
+        this.panel.style.bottom = 'auto';
+
+        // Prevent dragging on interactive elements
+        const interactiveElements = this.handle.querySelectorAll('button, input, select, textarea, a');
         interactiveElements.forEach(elem => {
             elem.addEventListener('mousedown', (e) => e.stopPropagation());
-            elem.addEventListener('touchstart', (e) => e.stopPropagation());
+            elem.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
         });
 
-        // Mouse events
-        this.handle.addEventListener('mousedown', this.dragStart.bind(this));
-        document.addEventListener('mousemove', this.drag.bind(this));
-        document.addEventListener('mouseup', this.dragEnd.bind(this));
+        // Bind events
+        this.handleMouseDown = this.dragStart.bind(this);
+        this.handleMouseMove = this.drag.bind(this);
+        this.handleMouseUp = this.dragEnd.bind(this);
+        this.handleTouchStart = this.dragStart.bind(this);
+        this.handleTouchMove = this.drag.bind(this);
+        this.handleTouchEnd = this.dragEnd.bind(this);
 
-        // Touch events
-        this.handle.addEventListener('touchstart', this.dragStart.bind(this), { passive: false });
-        document.addEventListener('touchmove', this.drag.bind(this), { passive: false });
-        document.addEventListener('touchend', this.dragEnd.bind(this));
+        // Mouse events
+        this.handle.addEventListener('mousedown', this.handleMouseDown);
+
+        // Touch events with passive for better scrolling performance
+        this.handle.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+
+        // Add cursor style to handle
+        this.handle.style.cursor = 'move';
     }
 
     dragStart(e) {
-        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        // Check if clicking on interactive element
+        if (e.target.matches('button, input, select, textarea, a') ||
+            e.target.closest('button, input, select, textarea, a')) {
             return;
         }
+
         e.preventDefault();
-
-        // FIX: Reset the transform to prevent a jump on the second drag
-        this.panel.style.transform = 'none';
-
-        const rect = this.panel.getBoundingClientRect();
-        this.panel.style.left = `${rect.left}px`;
-        this.panel.style.top = `${rect.top}px`;
-        this.panel.style.right = 'auto';
-        this.panel.style.bottom = 'auto';
 
         const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
 
-        this.initialX = clientX - rect.left;
-        this.initialY = clientY - rect.top;
+        this.initialMouseX = clientX - this.currentX;
+        this.initialMouseY = clientY - this.currentY;
 
         this.isDragging = true;
+
+        // Add dragging class for visual feedback
         this.panel.classList.add('dragging');
+
+        // Add global event listeners only when dragging
+        if (e.type === 'mousedown') {
+            document.addEventListener('mousemove', this.handleMouseMove);
+            document.addEventListener('mouseup', this.handleMouseUp);
+        } else {
+            document.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+            document.addEventListener('touchend', this.handleTouchEnd);
+        }
+
+        // Prevent text selection while dragging
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
     }
 
     drag(e) {
@@ -60,36 +96,88 @@ class DraggablePanel {
         const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
 
-        // FIX 2: Correct position calculation
-        let newX = clientX - this.initialX;
-        let newY = clientY - this.initialY;
+        // Calculate new position
+        const newX = clientX - this.initialMouseX;
+        const newY = clientY - this.initialMouseY;
 
-        // Keep panel within viewport
-        const padding = 20; // Minimum pixels to keep visible
-        const panelWidth = this.panel.offsetWidth;
-        const panelHeight = this.panel.offsetHeight;
+        // Cancel any pending animation frame
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+        }
 
-        // Apply bounds
-        newX = Math.max(-panelWidth + padding, Math.min(newX, window.innerWidth - padding));
-        newY = Math.max(0, Math.min(newY, window.innerHeight - padding));
+        // Use requestAnimationFrame for smooth updates
+        this.rafId = requestAnimationFrame(() => {
+            // Apply bounds checking
+            const padding = 20;
+            const panelWidth = this.panel.offsetWidth;
+            const panelHeight = this.panel.offsetHeight;
 
-        this.setPosition(newX, newY);
+            this.currentX = Math.max(-panelWidth + padding,
+                Math.min(newX, window.innerWidth - padding));
+            this.currentY = Math.max(0,
+                Math.min(newY, window.innerHeight - padding));
+
+            this.updatePosition();
+        });
     }
 
-    dragEnd() {
+    dragEnd(e) {
         if (!this.isDragging) return;
+
         this.isDragging = false;
         this.panel.classList.remove('dragging');
+
+        // Remove global event listeners
+        document.removeEventListener('mousemove', this.handleMouseMove);
+        document.removeEventListener('mouseup', this.handleMouseUp);
+        document.removeEventListener('touchmove', this.handleTouchMove);
+        document.removeEventListener('touchend', this.handleTouchEnd);
+
+        // Re-enable text selection
+        document.body.style.userSelect = '';
+        document.body.style.webkitUserSelect = '';
+
+        // Cancel any pending animation
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+            this.rafId = null;
+        }
+
+        // Clean up will-change after animation
+        setTimeout(() => {
+            if (!this.isDragging) {
+                this.panel.style.willChange = 'auto';
+            }
+        }, 0);
     }
 
+    updatePosition() {
+        // Use transform3d for hardware acceleration
+        this.panel.style.transform = `translate3d(${this.currentX}px, ${this.currentY}px, 0)`;
+    }
+
+    // Method to programmatically set position
     setPosition(x, y) {
-        this.panel.style.transform = `translate(${x}px, ${y}px)`;
-        // Using transform is often smoother than left/top
-        this.panel.style.left = `0px`;
-        this.panel.style.top = `0px`;
+        this.currentX = x;
+        this.currentY = y;
+        this.updatePosition();
     }
 
+    // Cleanup method
+    destroy() {
+        this.handle.removeEventListener('mousedown', this.handleMouseDown);
+        this.handle.removeEventListener('touchstart', this.handleTouchStart);
+        document.removeEventListener('mousemove', this.handleMouseMove);
+        document.removeEventListener('mouseup', this.handleMouseUp);
+        document.removeEventListener('touchmove', this.handleTouchMove);
+        document.removeEventListener('touchend', this.handleTouchEnd);
+
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+        }
+    }
 }
+
 
 class StepExplainer {
     constructor(visualizer) {
@@ -116,14 +204,13 @@ class StepExplainer {
         this.makePanelsDraggable();
     }
 
-    // Corrected function
     makePanelsDraggable() {
         // Make explanation panel draggable by its header
         const explanationPanel = document.getElementById('explanation-panel');
         if (explanationPanel) {
             const explanationHeader = explanationPanel.querySelector('.explanation-header');
-            // Use 'const' to declare the variable in this scope
             const explanationDraggable = new DraggablePanel(explanationPanel, explanationHeader);
+            this.draggableInstances.push(explanationDraggable);
         }
 
         // Make pseudocode panel draggable by its header
@@ -131,13 +218,21 @@ class StepExplainer {
         if (pseudocodePanel) {
             const pseudocodeHeader = pseudocodePanel.querySelector('.pseudocode-header');
             const pseudocodeDraggable = new DraggablePanel(pseudocodePanel, pseudocodeHeader);
+            this.draggableInstances.push(pseudocodeDraggable);
         }
 
         // Make step counter draggable
         const stepCounter = document.querySelector('.step-counter');
         if (stepCounter) {
             const stepCounterDraggable = new DraggablePanel(stepCounter, stepCounter);
+            this.draggableInstances.push(stepCounterDraggable);
         }
+    }
+
+    // Add cleanup method
+    destroy() {
+        this.draggableInstances.forEach(instance => instance.destroy());
+        this.draggableInstances = [];
     }
 
     createPanels() {
