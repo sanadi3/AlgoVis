@@ -530,8 +530,8 @@ class GraphVisualizer {
 
     updateButtonStates() {
         const stepBtn = document.getElementById('stepBtn');
-        if (this.isRunning && this.isPaused && !this.isStepMode) {
-            // Enable step forward when paused in auto mode
+        if (this.isRunning && this.isStepMode) {
+            // Enable step forward when in step-through mode
             stepBtn.disabled = false;
             stepBtn.style.opacity = '1';
         } else {
@@ -1216,12 +1216,12 @@ class GraphVisualizer {
             return;
         }
 
-        // Only allow step forward when algorithm is paused (not in step mode)
-        if (!this.isRunning || this.isStepMode) {
+        // Only allow step forward when in step-through mode
+        if (!this.isRunning || !this.isStepMode) {
             return;
         }
 
-        if (this.isPaused && this.stepResolve) {
+        if (this.stepResolve) {
             // Advance to next step
             this.stepResolve();
             this.stepResolve = null;
