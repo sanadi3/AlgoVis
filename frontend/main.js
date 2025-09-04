@@ -75,6 +75,7 @@ class GraphVisualizer {
         this.attachEventListeners();
         this.updateStatus(); // update nodes and edges n shi
         this.setupKeyboardShortcuts();
+        this.updateButtonStates();
     }
 
     setupCanvas() {
@@ -172,6 +173,11 @@ class GraphVisualizer {
 
         document.getElementById('weightConfirm').addEventListener('click', this.confirmWeight.bind(this));
         document.getElementById('weightCancel').addEventListener('click', this.cancelWeight.bind(this));
+
+        // Run mode modal buttons
+        document.getElementById('autoModeBtn').addEventListener('click', this.startAutoMode.bind(this));
+        document.getElementById('stepModeBtn').addEventListener('click', this.startStepMode.bind(this));
+        document.getElementById('runModeCancel').addEventListener('click', this.hideRunModeModal.bind(this));
 
     }
 
@@ -426,56 +432,113 @@ class GraphVisualizer {
                 this.stepResolve = null;
                 document.getElementById('runBtn').innerHTML = '<span>▶</span> Run Algorithm';
                 document.getElementById('stepBtn').innerHTML = 'Step Forward';
+                this.updateButtonStates();
                 return;
             } else if (this.isPaused) {
                 // Resume from pause
                 this.isPaused = false;
                 document.getElementById('runBtn').innerHTML = '<span>⏸</span> Pause';
+                this.updateButtonStates();
                 return;
             } else {
                 // Pause the algorithm
                 this.isPaused = true;
                 document.getElementById('runBtn').innerHTML = '<span>▶</span> Resume';
+                this.updateButtonStates();
                 return;
             }
         }
 
+        // Show mode selection modal
+        this.showRunModeModal();
+    }
+
+    showRunModeModal() {
+        document.getElementById('runModeModal').classList.add('active');
+    }
+
+    hideRunModeModal() {
+        document.getElementById('runModeModal').classList.remove('active');
+    }
+
+    async startAutoMode() {
+        this.hideRunModeModal();
         this.reset();
         this.isRunning = true;
         this.isPaused = false;
         this.isStepMode = false;
         document.getElementById('runBtn').innerHTML = '<span>⏸</span> Pause';
+        this.updateButtonStates();
 
         // Clear previous explanations
         this.stepExplainer.clear();
 
-        // switch staements
-        switch (this.currentAlgorithm) {
-            case 'dijkstra':
-                await this.dijkstra();
-                break;
-            case 'bfs':
-                await this.bfs();
-                break;
-            case 'dfs':
-                await this.dfs();
-                break;
-            case 'prim':
-                await this.prim();
-                break;
-            case 'kruskal':
-                await this.kruskal();
-                break;
-            case 'bellman-ford':
-                await this.bellmanFord();
-                break;
-        }
-        this.isRunning = false;
+        // Run the algorithm
+        await this.executeAlgorithm();
+    }
+
+    async startStepMode() {
+        this.hideRunModeModal();
+        this.reset();
+        this.isRunning = true;
         this.isPaused = false;
-        this.isStepMode = false;
-        this.stepResolve = null;
-        document.getElementById('runBtn').innerHTML = '<span>▶</span> Run Algorithm';
-        document.getElementById('stepBtn').innerHTML = 'Step Forward';
+        this.isStepMode = true;
+        document.getElementById('runBtn').innerHTML = '<span>⏹</span> Stop';
+        document.getElementById('stepBtn').innerHTML = 'Next Step';
+        this.updateButtonStates();
+
+        // Clear previous explanations
+        this.stepExplainer.clear();
+
+        // Run the algorithm
+        await this.executeAlgorithm();
+    }
+
+    async executeAlgorithm() {
+        try {
+            switch (this.currentAlgorithm) {
+                case 'dijkstra':
+                    await this.dijkstra();
+                    break;
+                case 'bfs':
+                    await this.bfs();
+                    break;
+                case 'dfs':
+                    await this.dfs();
+                    break;
+                case 'prim':
+                    await this.prim();
+                    break;
+                case 'kruskal':
+                    await this.kruskal();
+                    break;
+                case 'bellman-ford':
+                    await this.bellmanFord();
+                    break;
+            }
+        } finally {
+            // Reset states when algorithm completes
+            this.isRunning = false;
+            this.isPaused = false;
+            this.isStepMode = false;
+            this.stepResolve = null;
+            document.getElementById('runBtn').innerHTML = '<span>▶</span> Run Algorithm';
+            document.getElementById('stepBtn').innerHTML = 'Step Forward';
+            this.updateButtonStates();
+        }
+    }
+
+    updateButtonStates() {
+        const stepBtn = document.getElementById('stepBtn');
+        if (this.isRunning && this.isPaused && !this.isStepMode) {
+            // Enable step forward when paused in auto mode
+            stepBtn.disabled = false;
+            stepBtn.style.opacity = '1';
+        } else {
+            // Disable step forward in other states
+            stepBtn.disabled = true;
+            stepBtn.style.opacity = '0.5';
+        }
     }
 
     async dijkstra() {
@@ -1153,40 +1216,12 @@ class GraphVisualizer {
             return;
         }
 
-        if (!this.isRunning) {
-            // Start step mode
-            this.reset();
-            this.isRunning = true;
-            this.isPaused = false;
-            this.isStepMode = true;
-            document.getElementById('runBtn').innerHTML = '<span>⏹</span> Stop';
-            document.getElementById('stepBtn').innerHTML = 'Next Step';
-            
-            // Clear previous explanations
-            this.stepExplainer.clear();
+        // Only allow step forward when algorithm is paused (not in step mode)
+        if (!this.isRunning || this.isStepMode) {
+            return;
+        }
 
-            // Start the algorithm in step mode
-            switch (this.currentAlgorithm) {
-                case 'dijkstra':
-                    await this.dijkstra();
-                    break;
-                case 'bfs':
-                    await this.bfs();
-                    break;
-                case 'dfs':
-                    await this.dfs();
-                    break;
-                case 'prim':
-                    await this.prim();
-                    break;
-                case 'kruskal':
-                    await this.kruskal();
-                    break;
-                case 'bellman-ford':
-                    await this.bellmanFord();
-                    break;
-            }
-        } else if (this.isStepMode && this.stepResolve) {
+        if (this.isPaused && this.stepResolve) {
             // Advance to next step
             this.stepResolve();
             this.stepResolve = null;
@@ -1210,6 +1245,7 @@ class GraphVisualizer {
         this.isStepMode = false;
         this.stepResolve = null;
         this.draw();
+        this.updateButtonStates();
     }
 
     clearGraph() {

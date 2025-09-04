@@ -338,8 +338,8 @@
             position: fixed !important;
             bottom: 20px;
             right: 20px;
-            width: 400px;
-            max-height: 300px;
+            width: 320px;
+            height: 250px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -350,10 +350,33 @@
             transition: box-shadow 0.3s ease, opacity 0.3s ease;
             /* Make resizable */
             resize: both;
-            min-width: 300px;
-            min-height: 200px;
-            max-width: 600px;
+            min-width: 250px;
+            min-height: 150px;
+            max-width: 80vw;
             max-height: 80vh;
+            border: 2px solid transparent;
+        }
+
+        #explanation-panel:hover {
+            border-color: #e5e7eb;
+        }
+
+        /* Resize handle indicator */
+        #explanation-panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(-45deg, transparent 30%, #d1d5db 30%, #d1d5db 40%, transparent 40%, transparent 60%, #d1d5db 60%, #d1d5db 70%, transparent 70%);
+            cursor: se-resize;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #explanation-panel:hover::after {
+            opacity: 1;
         }
 
         #explanation-panel.active {
@@ -524,15 +547,44 @@
             position: fixed !important;
             top: 80px;
             right: 20px;
-            width: 350px;
+            width: 300px;
+            height: 300px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             z-index: 999;
             display: none;
-            max-height: 400px;
             overflow: hidden;
             transition: box-shadow 0.3s ease, opacity 0.3s ease;
+            /* Make resizable */
+            resize: both;
+            min-width: 200px;
+            min-height: 150px;
+            max-width: 80vw;
+            max-height: 80vh;
+            border: 2px solid transparent;
+        }
+
+        #pseudocode-panel:hover {
+            border-color: #e5e7eb;
+        }
+
+        /* Resize handle indicator for pseudocode panel */
+        #pseudocode-panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(-45deg, transparent 30%, #d1d5db 30%, #d1d5db 40%, transparent 40%, transparent 60%, #d1d5db 60%, #d1d5db 70%, transparent 70%);
+            cursor: se-resize;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #pseudocode-panel:hover::after {
+            opacity: 1;
         }
 
         #pseudocode-panel.active {
@@ -891,6 +943,29 @@
         <input type="number" id="weightInput" class="weight-input" placeholder="Enter weight (default: 1)" value="1">
         <button id="weightConfirm" class="btn btn-primary">Confirm</button>
         <button id="weightCancel" class="btn btn-secondary">Cancel</button>
+    </div>
+</div>
+
+<!-- Run Mode Modal -->
+<div id="runModeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Choose Run Mode</h2>
+        </div>
+        <p style="margin-bottom: 20px; color: #666;">How would you like to run the algorithm?</p>
+        <div style="display: flex; gap: 12px; flex-direction: column;">
+            <button id="autoModeBtn" class="btn btn-primary" style="text-align: center;">
+                <span style="font-size: 18px; margin-right: 8px;">▶</span>
+                Automatic Mode
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Runs continuously with animation</div>
+            </button>
+            <button id="stepModeBtn" class="btn btn-secondary" style="text-align: center;">
+                <span style="font-size: 18px; margin-right: 8px;">⏯</span>
+                Step-Through Mode
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Manual control, step by step</div>
+            </button>
+        </div>
+        <button id="runModeCancel" class="btn btn-secondary" style="margin-top: 16px; width: 100%;">Cancel</button>
     </div>
 </div>
 
