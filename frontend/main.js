@@ -80,11 +80,14 @@ class GraphVisualizer {
             const rect = this.canvas.parentElement.getBoundingClientRect();
             this.canvas.width = rect.width;
             this.canvas.height = rect.height;
+            console.log('Canvas resized to:', rect.width, 'x', rect.height); // Debug log
             this.draw(); // redraw whenever size changes
         };
 
         resizeCanvas(); // call once to set initial
         window.addEventListener('resize', resizeCanvas); // event listener for resize
+        
+        console.log('Canvas setup complete. Canvas element:', this.canvas); // Debug log
     }
 
     // all events
@@ -102,6 +105,7 @@ class GraphVisualizer {
             btn.addEventListener('click', () => {
                 // set tool based on data embedded
                 this.currentTool = btn.dataset.tool;
+                console.log('Tool changed to:', this.currentTool); // Debug log
                 document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active'); // highlight the active tool button
                 this.canvas.style.cursor = this.currentTool === 'move' ? 'grab' : 'crosshair';
@@ -146,6 +150,8 @@ class GraphVisualizer {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        console.log('Canvas clicked at:', x, y, 'Tool:', this.currentTool); // Debug log
+
         if (this.currentTool === 'node') {
             this.addNode(x, y);
         } else if (this.currentTool === 'edge') {
@@ -153,6 +159,7 @@ class GraphVisualizer {
             if (clickedNode) {
                 if (!this.selectedNode) {
                     this.selectedNode = clickedNode;
+                    console.log('Selected node:', clickedNode.name); // Debug log
                 } else if (this.selectedNode !== clickedNode) {
                     if (this.isWeighted) {
                         this.pendingEdge = {from: this.selectedNode, to: clickedNode};
@@ -227,6 +234,7 @@ class GraphVisualizer {
     }
 
     addNode(x, y) {
+        console.log('Adding node at:', x, y); // Debug log
         // A starts from 65
         const name = String.fromCharCode(65 + this.nodeCounter);
         // set node properties
@@ -241,6 +249,7 @@ class GraphVisualizer {
             state: 'default'
         });
         this.nodeCounter++;
+        console.log('Node added:', name, 'Total nodes:', this.nodes.length); // Debug log
         this.updateStatus();
     }
 

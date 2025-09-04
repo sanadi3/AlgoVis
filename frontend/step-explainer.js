@@ -187,6 +187,7 @@ class StepExplainer {
         this.currentStepIndex = 0;
         this.isActive = false;
         this.isMinimized = false;
+        this.draggableInstances = []; // Initialize the array
 
         // list of algorithms
         this.algorithms = {
