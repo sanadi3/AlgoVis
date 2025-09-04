@@ -88,6 +88,11 @@ class GraphVisualizer {
         window.addEventListener('resize', resizeCanvas); // event listener for resize
         
         console.log('Canvas setup complete. Canvas element:', this.canvas); // Debug log
+        
+        // Test canvas click
+        this.canvas.addEventListener('click', (e) => {
+            console.log('Canvas click test - this should work!'); // Debug log
+        });
     }
 
     // all events
@@ -101,8 +106,14 @@ class GraphVisualizer {
         this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
 
         // add a click listener for each tool button
-        document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+        const toolButtons = document.querySelectorAll('.tool-btn');
+        console.log('Found tool buttons:', toolButtons.length); // Debug log
+        
+        toolButtons.forEach((btn, index) => {
+            console.log(`Button ${index}:`, btn, 'data-tool:', btn.dataset.tool); // Debug log
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Tool button clicked!', btn.dataset.tool); // Debug log
                 // set tool based on data embedded
                 this.currentTool = btn.dataset.tool;
                 console.log('Tool changed to:', this.currentTool); // Debug log
@@ -113,9 +124,15 @@ class GraphVisualizer {
         });
 
         // same for the algorithm buttons
-        document.querySelectorAll('.algo-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+        const algoButtons = document.querySelectorAll('.algo-btn');
+        console.log('Found algorithm buttons:', algoButtons.length); // Debug log
+        
+        algoButtons.forEach((btn, index) => {
+            console.log(`Algo button ${index}:`, btn, 'data-algo:', btn.dataset.algo); // Debug log
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
                 this.currentAlgorithm = btn.dataset.algo;
+                console.log('Algorithm changed to:', this.currentAlgorithm); // Debug log
                 document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 document.getElementById('currentAlgo').textContent = btn.textContent;
@@ -123,15 +140,26 @@ class GraphVisualizer {
         });
 
         // listeners for control buttons
-        document.getElementById('runBtn').addEventListener('click', this.runAlgorithm.bind(this));
-        document.getElementById('stepBtn').addEventListener('click', this.stepForward.bind(this));
-        document.getElementById('resetBtn').addEventListener('click', this.reset.bind(this));
-        document.getElementById('clearBtn').addEventListener('click', this.clearGraph.bind(this));
-        document.getElementById('generateBtn').addEventListener('click', this.generateRandomGraph.bind(this));
-        document.getElementById('directedBtn').addEventListener('click', this.toggleDirected.bind(this));
-        document.getElementById('weightedBtn').addEventListener('click', this.toggleWeighted.bind(this));
-        document.getElementById('exportBtn').addEventListener('click', this.exportGraph.bind(this));
-        document.getElementById('importBtn').addEventListener('click', () => fileInput.click());
+        const controlButtonIds = ['runBtn', 'stepBtn', 'resetBtn', 'clearBtn', 'generateBtn', 'directedBtn', 'weightedBtn', 'exportBtn', 'importBtn'];
+        
+        controlButtonIds.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                console.log(`Found control button: ${id}`); // Debug log
+            } else {
+                console.error(`Control button not found: ${id}`); // Debug log
+            }
+        });
+        
+        document.getElementById('runBtn')?.addEventListener('click', this.runAlgorithm.bind(this));
+        document.getElementById('stepBtn')?.addEventListener('click', this.stepForward.bind(this));
+        document.getElementById('resetBtn')?.addEventListener('click', this.reset.bind(this));
+        document.getElementById('clearBtn')?.addEventListener('click', this.clearGraph.bind(this));
+        document.getElementById('generateBtn')?.addEventListener('click', this.generateRandomGraph.bind(this));
+        document.getElementById('directedBtn')?.addEventListener('click', this.toggleDirected.bind(this));
+        document.getElementById('weightedBtn')?.addEventListener('click', this.toggleWeighted.bind(this));
+        document.getElementById('exportBtn')?.addEventListener('click', this.exportGraph.bind(this));
+        document.getElementById('importBtn')?.addEventListener('click', () => fileInput.click());
 
         // speed slider
         document.getElementById('speedSlider').addEventListener('input', (e) => {
@@ -1354,20 +1382,27 @@ class GraphVisualizer {
     }
 }
 
-const visualizer = new GraphVisualizer();
-
-const fileInput = document.createElement('input');
-fileInput.type = 'file';
-fileInput.accept = '.json';
-fileInput.style.display = 'none';
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            visualizer.importGraph(e.target.result);
-        };
-        reader.readAsText(file);
-    }
+// Wait for DOM to be fully loaded before initializing
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing visualizer...');
+    
+    const visualizer = new GraphVisualizer();
+    
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                visualizer.importGraph(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+    });
+    document.body.appendChild(fileInput);
+    
+    console.log('Visualizer initialized successfully');
 });
-document.body.appendChild(fileInput);
