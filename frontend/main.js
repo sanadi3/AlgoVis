@@ -25,8 +25,11 @@ class GraphVisualizer {
         // animation
         this.animationSpeed = 5;
         this.isRunning = false;
+        this.isPaused = false;
+        this.isStepMode = false;
         this.animationSteps = [];
         this.currentStep = 0;
+        this.stepResolve = null; // Promise resolver for step mode
 
         this.useBackend = false;
         this.backendUrl = 'http://localhost:3001';
@@ -163,7 +166,8 @@ class GraphVisualizer {
 
         // speed slider
         document.getElementById('speedSlider').addEventListener('input', (e) => {
-            this.animationSpeed = parseInt(e.target.value);
+            this.animationSpeed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = this.animationSpeed.toFixed(1);
         });
 
         document.getElementById('weightConfirm').addEventListener('click', this.confirmWeight.bind(this));
@@ -415,12 +419,31 @@ class GraphVisualizer {
         }
 
         if (this.isRunning) {
-            this.isRunning = false;
-            return;
+            if (this.isStepMode) {
+                // Stop step mode
+                this.isRunning = false;
+                this.isStepMode = false;
+                this.stepResolve = null;
+                document.getElementById('runBtn').innerHTML = '<span>▶</span> Run Algorithm';
+                document.getElementById('stepBtn').innerHTML = 'Step Forward';
+                return;
+            } else if (this.isPaused) {
+                // Resume from pause
+                this.isPaused = false;
+                document.getElementById('runBtn').innerHTML = '<span>⏸</span> Pause';
+                return;
+            } else {
+                // Pause the algorithm
+                this.isPaused = true;
+                document.getElementById('runBtn').innerHTML = '<span>▶</span> Resume';
+                return;
+            }
         }
 
         this.reset();
         this.isRunning = true;
+        this.isPaused = false;
+        this.isStepMode = false;
         document.getElementById('runBtn').innerHTML = '<span>⏸</span> Pause';
 
         // Clear previous explanations
@@ -448,7 +471,11 @@ class GraphVisualizer {
                 break;
         }
         this.isRunning = false;
+        this.isPaused = false;
+        this.isStepMode = false;
+        this.stepResolve = null;
         document.getElementById('runBtn').innerHTML = '<span>▶</span> Run Algorithm';
+        document.getElementById('stepBtn').innerHTML = 'Step Forward';
     }
 
     async dijkstra() {
@@ -497,7 +524,7 @@ class GraphVisualizer {
             current.state = 'current';
             // drawing after changing state
             this.draw();
-            await this.sleep(1000 / this.animationSpeed);
+            await this.sleep(Math.max(50, 1000 / this.animationSpeed));
 
             // Update neighbors
             const neighbors = this.getNeighbors(current);
@@ -548,7 +575,7 @@ class GraphVisualizer {
                 }
                 pathNode = pathNode.parent;
                 this.draw();
-                await this.sleep(500 / this.animationSpeed);
+                await this.sleep(Math.max(25, 500 / this.animationSpeed));
             }
         }
     }
@@ -588,7 +615,7 @@ class GraphVisualizer {
 
             current.state = 'current';
             this.draw();
-            await this.sleep(1000 / this.animationSpeed);
+            await this.sleep(Math.max(50, 1000 / this.animationSpeed));
 
             // Visit neighbors
             const neighbors = this.getNeighbors(current);
@@ -614,7 +641,7 @@ class GraphVisualizer {
                     if (edge) {
                         edge.state = 'highlight';
                         this.draw();
-                        await this.sleep(500 / this.animationSpeed);
+                        await this.sleep(Math.max(25, 500 / this.animationSpeed));
                         edge.state = 'default';
                     }
                 } else {
@@ -673,7 +700,7 @@ class GraphVisualizer {
 
         node.state = 'current';
         this.draw();
-        await this.sleep(1000 / this.animationSpeed);
+        await this.sleep(Math.max(50, 1000 / this.animationSpeed));
 
         const neighbors = this.getNeighbors(node);
         for (const {node: neighbor} of neighbors) {
@@ -694,7 +721,7 @@ class GraphVisualizer {
                 if (edge) {
                     edge.state = 'highlight';
                     this.draw();
-                    await this.sleep(500 / this.animationSpeed);
+                    await this.sleep(Math.max(25, 500 / this.animationSpeed));
                 }
 
                 await this.dfsRecursive(neighbor, depth + 1);
@@ -766,7 +793,7 @@ class GraphVisualizer {
 
             current.state = 'current';
             this.draw();
-            await this.sleep(1000 / this.animationSpeed);
+            await this.sleep(Math.max(50, 1000 / this.animationSpeed));
 
             // Update neighbors
             const neighbors = this.getNeighbors(current);
@@ -873,7 +900,7 @@ class GraphVisualizer {
 
             edge.state = 'highlight';
             this.draw();
-            await this.sleep(1000 / this.animationSpeed);
+            await this.sleep(Math.max(50, 1000 / this.animationSpeed));
 
             if (union(edge.from.id, edge.to.id)) {
                 // Edge added to MST
@@ -904,7 +931,7 @@ class GraphVisualizer {
             }
 
             this.draw();
-            await this.sleep(500 / this.animationSpeed);
+            await this.sleep(Math.max(25, 500 / this.animationSpeed));
         }
 
         // Add completion step
@@ -956,7 +983,7 @@ class GraphVisualizer {
 
                 edge.state = 'highlight';
                 this.draw();
-                await this.sleep(500 / this.animationSpeed);
+                await this.sleep(Math.max(25, 500 / this.animationSpeed));
 
                 const fromDistance = edge.from.distance;
                 const toDistance = edge.to.distance;
@@ -985,7 +1012,7 @@ class GraphVisualizer {
                     improvements++;
 
                     this.draw();
-                    await this.sleep(500 / this.animationSpeed);
+                    await this.sleep(Math.max(25, 500 / this.animationSpeed));
                     edge.to.state = 'visited';
                 }
 
@@ -1081,7 +1108,7 @@ class GraphVisualizer {
             }
 
             this.draw();
-            await this.sleep(500 / this.animationSpeed);
+            await this.sleep(Math.max(25, 500 / this.animationSpeed));
         }
     }
 
@@ -1098,12 +1125,72 @@ class GraphVisualizer {
     }
 
     sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise(resolve => {
+            if (this.isStepMode) {
+                // In step mode, wait for user to click "Next Step"
+                this.stepResolve = resolve;
+            } else {
+                // In auto mode, use timing
+                const startTime = Date.now();
+                const checkPause = () => {
+                    if (this.isPaused) {
+                        // If paused, wait and check again
+                        setTimeout(checkPause, 100);
+                    } else if (Date.now() - startTime >= ms) {
+                        resolve();
+                    } else {
+                        setTimeout(checkPause, 10);
+                    }
+                };
+                checkPause();
+            }
+        });
     }
 
-    stepForward() {
-        // need to refactor algorithms
-        alert('feature coming soon');
+    async stepForward() {
+        if (!this.currentAlgorithm) {
+            alert('Please select an Algorithm first');
+            return;
+        }
+
+        if (!this.isRunning) {
+            // Start step mode
+            this.reset();
+            this.isRunning = true;
+            this.isPaused = false;
+            this.isStepMode = true;
+            document.getElementById('runBtn').innerHTML = '<span>⏹</span> Stop';
+            document.getElementById('stepBtn').innerHTML = 'Next Step';
+            
+            // Clear previous explanations
+            this.stepExplainer.clear();
+
+            // Start the algorithm in step mode
+            switch (this.currentAlgorithm) {
+                case 'dijkstra':
+                    await this.dijkstra();
+                    break;
+                case 'bfs':
+                    await this.bfs();
+                    break;
+                case 'dfs':
+                    await this.dfs();
+                    break;
+                case 'prim':
+                    await this.prim();
+                    break;
+                case 'kruskal':
+                    await this.kruskal();
+                    break;
+                case 'bellman-ford':
+                    await this.bellmanFord();
+                    break;
+            }
+        } else if (this.isStepMode && this.stepResolve) {
+            // Advance to next step
+            this.stepResolve();
+            this.stepResolve = null;
+        }
     }
 
     reset() {
@@ -1119,6 +1206,9 @@ class GraphVisualizer {
             edge.state = 'default';
         });
         this.selectedNode = null;
+        this.isPaused = false;
+        this.isStepMode = false;
+        this.stepResolve = null;
         this.draw();
     }
 
